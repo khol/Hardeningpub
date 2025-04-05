@@ -1,7 +1,7 @@
 # CIS Control: 1.2.4. (L1) Ensure 'Reset account lockout counter after' is set to '15 or more minute(s)'
-# In simpler terms: This setting controls how long a user's account stays locked out after too many failed login attempts.
 # Define the security policy setting and desired value
 $desiredValue = 15
+
 # Create hashtable for CIS 1.2.4
 $cis124Settings = @{
     "HKLM\SECURITY\Policy\PolAdt" = @{
@@ -10,16 +10,61 @@ $cis124Settings = @{
 }
 
 
+# Installera PSRegistry (om det inte redan är installerat)
+try {
+    Get-Module -Name PSRegistry -ListAvailable -ErrorAction Stop | Out-Null 
+    Write-Host "PSRegistry är redan installerat." -ForegroundColor Green
+} catch {
+    Write-Host "Installerar PSRegistry..." -ForegroundColor Yellow 
+    try {
+        Install-Module PSRegistry -Scope CurrentUser -Force -ErrorAction Stop 
+        Write-Host "PSRegistry installerat." -ForegroundColor Green
+    } catch {
+        Write-Error "Misslyckades med att installera PSRegistry: $_" 
+        return # Avbryt skriptet om installationen misslyckas
+    }
+}
+
+# Importera PSRegistry
+try {
+    Install-Module -Name PSRegistry
+    Import-Module PSRegistry -ErrorAction Stop
+    Write-Host "PSRegistry importerat." -ForegroundColor Green
+} catch {
+    Write-Error "Misslyckades med att importera PSRegistry: $_" 
+    return # Avbryt skriptet om importen misslyckas
+}
+
+# Kontrollera att modulen ar tillganglig
+if (Get-Module -Name PSRegistry) {
+    Write-Host "PSRegistry-modulen är tillgänglig." -ForegroundColor Green
+} else {
+    Write-Error "PSRegistry-modulen är inte tillgänglig efter import." 
+    return # Avbryt skriptet om modulen inte ar tillgänglig
+}
+
+
 function Set-RegistryKeys {
     param (
         [Parameter(Mandatory=$true)]
-        [hashtable]$table
+        [hashtable]$table,
+        [switch]$RunAsAdmin # Flagga för att undvika oändliga loopar
     )
+
+    if (-not $RunAsAdmin) {
+        if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+            # Starta en ny PowerShell-process med administratörsbehörighet
+            Start-Process -FilePath "powershell.exe" -ArgumentList "-ExecutionPolicy Bypass -File `"$($MyInvocation.MyCommand.Path)`" -RunAsAdmin" -Verb RunAs -Wait
+            return # Avbryt den aktuella processen
+        }
+    }
+
+    # Resten av din kod för att ändra registervärden
     foreach ($key in $table.Keys) {
         try {
-            # Convert HKLM to full path
+            # Konvertera HKLM till fullständig sökväg
             $fullPath = $key -replace '^HKLM\\', 'HKLM:\\'
-            
+
             if (!(Test-Path $fullPath)) {
                 New-Item -Path $fullPath -Force | Out-Null
             }
@@ -27,12 +72,17 @@ function Set-RegistryKeys {
             foreach ($valueName in $values.Keys) {
                 $value = $values[$valueName]
                 $type = if ($value -is [int]) { "DWord" } else { "String" }
-                
-                # Use New-ItemProperty instead of Set-ItemProperty
-                if (Get-ItemProperty -Path $fullPath -Name $valueName -ErrorAction SilentlyContinue) {
+
+                # Hämta befintligt värde
+                $currentValue = (Get-ItemProperty -Path $fullPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+
+                if ($currentValue -ne $null) {
+                    Write-Host "Befintligt värde för '$valueName' är: $currentValue" -ForegroundColor Yellow
                     Set-ItemProperty -Path $fullPath -Name $valueName -Value $value
+                    Write-Host "Set registry value '$valueName' in key '$fullPath' to '$value'." -ForegroundColor Green
                 } else {
                     New-ItemProperty -Path $fullPath -Name $valueName -Value $value -PropertyType $type -Force | Out-Null
+                    Write-Host "Created registry value '$valueName' in key '$fullPath' with value '$value'." -ForegroundColor Green
                 }
             }
         }
@@ -42,8 +92,6 @@ function Set-RegistryKeys {
     }
 }
 
-
-
 # Apply CIS 1.2.4 settings
-Set-RegistryKeys -Table $cis124Settings
+Set-RegistryKeys -Table $cis124Settings -RunAsAdmin
 Write-Host "CIS 1.2.4: 'Reset account lockout counter after' set to $desiredValue minutes" -ForegroundColor Green
