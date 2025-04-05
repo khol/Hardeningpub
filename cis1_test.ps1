@@ -9,6 +9,27 @@ $cis124Settings = @{
     }
 }
 
+function Set-CIS123 {
+    # Define the registry settings for CIS 1.2.3
+    $cis123Settings = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
+            "AdministratorAccountLockout" = $desiredValue
+        }
+    }
+
+    # Apply the registry settings
+    Set-RegistryKeys -Table $cis123Settings -RunAsAdmin
+
+    # Verify the setting
+    $currentValue = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "AdministratorAccountLockout" -ErrorAction SilentlyContinue).AdministratorAccountLockout
+
+    if ($currentValue -eq $desiredValue) {
+        Write-Host "CIS 1.2.3: '$policyName' is set to '$desiredValue' (compliant)." -ForegroundColor Green
+    } else {
+        Write-Warning "CIS 1.2.3: '$policyName' is set to '$currentValue' (non-compliant)."
+    }
+}
+
 
 # Installera PSRegistry (om det inte redan är installerat)
 try {
