@@ -1,0 +1,3 @@
+får detta felet. 
+Set-LocalSecurityPolicy: the term 'Set-LocalSecurityPolicy' is not recognized as the name of a cmdlet, function, script file, or operable program. 
+check the spelling of the name, or if a patch was included, verify that the path is correct and try again. 
