@@ -108,3 +108,6 @@ function Set-RegistryKeys {
 # Apply CIS 1.2.4 settings
 Set-RegistryKeys -Table $cis124Settings -RunAsAdmin
 Write-Host "CIS 1.2.4: 'Reset account lockout counter after' set to $desiredValue minutes" -ForegroundColor Green
+# Apply CIS 1.2.3. settings
+Set-RegistryKeys -Table $cis123Settings -RunAsAdmin
+Write-Host " CIS Control: 1.2.3. (L1) Ensure 'Allow Administrator account lockout' is set to 'Enabled'" -ForegroundColor Green
