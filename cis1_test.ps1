@@ -9,26 +9,17 @@ $cis124Settings = @{
     }
 }
 
-function Set-CIS123 {
-    # Define the registry settings for CIS 1.2.3
-    $cis123Settings = @{
-        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
-            "AdministratorAccountLockout" = $desiredValue
-        }
-    }
+# CIS Control: 1.2.3. (L1) Ensure 'Allow Administrator account lockout' is set to 'Enabled'
+# In simpler terms: This setting makes sure that even the main administrator account can be locked out if someone tries to guess the password too many times.
 
-    # Apply the registry settings
-    Set-RegistryKeys -Table $cis123Settings -RunAsAdmin
+# Define the security policy setting and desired value
 
-    # Verify the setting
-    $currentValue = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "AdministratorAccountLockout" -ErrorAction SilentlyContinue).AdministratorAccountLockout
-
-    if ($currentValue -eq $desiredValue) {
-        Write-Host "CIS 1.2.3: '$policyName' is set to '$desiredValue' (compliant)." -ForegroundColor Green
-    } else {
-        Write-Warning "CIS 1.2.3: '$policyName' is set to '$currentValue' (non-compliant)."
+$cis123Settings = @{
+    "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
+        "AdministratorAccountLockout" = $desiredValue
     }
 }
+
 
 
 # Installera PSRegistry (om det inte redan är installerat)
