@@ -13,7 +13,8 @@ $cis124Settings = @{
 # In simpler terms: This setting makes sure that even the main administrator account can be locked out if someone tries to guess the password too many times.
 
 # Define the security policy setting and desired value
-
+$policyName = "Administrator account lockout duration" # This policy determines if lockout is active
+$desiredValue = 30 # Any value other than 0 enables lockout. We'll use 30 minutes as a reasonable default.
 $cis123Settings = @{
     "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
         "AdministratorAccountLockout" = $desiredValue
