@@ -16,7 +16,17 @@ function Get-SecurityPolicySetting {
     } catch {
         Write-Warning "SecPolicy module not found. Using registry method (limited functionality)."
         # *** REPLACE WITH REGISTRY METHOD HERE (SEE BELOW) ***
-        return $null # Or your appropriate default/error value
+        $registryKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"
+        $valueName = "ResetLockoutCount" # This is a *possible* registry value name
+        if (Test-Path $registryKey) {
+            try {
+                return (Get-ItemPropertyValue -Path $registryKey -Name $valueName -ErrorAction SilentlyContinue)
+            } catch {
+                return $null
+            }
+        } else {
+            return $null
+        }
     }
 }
 
@@ -30,6 +40,9 @@ function Set-SecurityPolicySetting {
     } catch {
         Write-Warning "SecPolicy module not found. Using registry method (limited functionality)."
         # *** REPLACE WITH REGISTRY METHOD HERE (SEE BELOW) ***
+        $registryKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"
+        $valueName = "ResetLockoutCount" # This is a *possible* registry value name
+        Set-ItemProperty -Path $registryKey -Name $valueName -Value $value -Force
     }
 }
 
@@ -51,21 +64,17 @@ $newValue = Get-SecurityPolicySetting -policyName $policyName
 
 Write-Host "  New Value: $newValue (minutes)"
 
-# **Registry Method (Example - Needs Adaptation)**
+# **Registry Method (Example - NEEDS VERIFICATION!)**
 #
-# For this specific setting, you might find information on registry keys
-# related to account lockout. However, it's crucial to:
+# **CRITICAL: You MUST verify the correct registry key and value names**
+# **for your specific Windows version (e.g., Windows 10, Windows 11, Server 2019, etc.).**
 #
-# 1.  **Verify the exact registry keys and values** for your Windows version.
-# 2.  **Understand the implications** of directly manipulating the registry.
-# 3.  **Test thoroughly** before using in production.
+# The following is an example and might not be accurate:
 #
-# Example (Conceptual - DO NOT USE WITHOUT VERIFICATION):
+# $registryKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"
+# $valueName = "ResetLockoutCount"
 #
-# $registryKey = "HKLM:\Some\Registry\Path"
-# $valueName = "LockoutDuration"
-#
-# function Get-RegistrySetting {
+# Function Get-RegistrySetting {
 #     param($key, $name)
 #     if (Test-Path $key) {
 #         return (Get-ItemProperty -Path $key).$name
@@ -74,7 +83,7 @@ Write-Host "  New Value: $newValue (minutes)"
 #     }
 # }
 #
-# function Set-RegistrySetting {
+# Function Set-RegistrySetting {
 #     param($key, $name, $value)
 #     Set-ItemProperty -Path $key -Name $name -Value $value
 # }
