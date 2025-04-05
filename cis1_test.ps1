@@ -10,11 +10,13 @@ function Get-SecurityPolicySetting {
     param($policyName)
 
     try {
-        Import-Module SecPolicy # Import the SecPolicy module
+        Import-Module SecPolicy -ErrorAction Stop # Try to import, stop on error
         $currentPolicy = Get-LocalSecurityPolicy -Name $policyName -ErrorAction Stop
         return $currentPolicy.EffectiveValue
     } catch {
-        return $null
+        Write-Warning "SecPolicy module not found. Using registry method (limited functionality)."
+        # *** REPLACE WITH REGISTRY METHOD HERE (SEE BELOW) ***
+        return $null # Or your appropriate default/error value
     }
 }
 
@@ -22,8 +24,13 @@ function Get-SecurityPolicySetting {
 function Set-SecurityPolicySetting {
     param($policyName, $value)
 
-    Import-Module SecPolicy # Import the SecPolicy module
-    Set-LocalSecurityPolicy -Name $policyName -Value $value
+    try {
+        Import-Module SecPolicy -ErrorAction Stop # Try to import, stop on error
+        Set-LocalSecurityPolicy -Name $policyName -Value $value
+    } catch {
+        Write-Warning "SecPolicy module not found. Using registry method (limited functionality)."
+        # *** REPLACE WITH REGISTRY METHOD HERE (SEE BELOW) ***
+    }
 }
 
 # Get the current setting
@@ -43,3 +50,35 @@ if ($currentValue -lt $desiredValue -or $currentValue -eq $null) {
 $newValue = Get-SecurityPolicySetting -policyName $policyName
 
 Write-Host "  New Value: $newValue (minutes)"
+
+# **Registry Method (Example - Needs Adaptation)**
+#
+# For this specific setting, you might find information on registry keys
+# related to account lockout. However, it's crucial to:
+#
+# 1.  **Verify the exact registry keys and values** for your Windows version.
+# 2.  **Understand the implications** of directly manipulating the registry.
+# 3.  **Test thoroughly** before using in production.
+#
+# Example (Conceptual - DO NOT USE WITHOUT VERIFICATION):
+#
+# $registryKey = "HKLM:\Some\Registry\Path"
+# $valueName = "LockoutDuration"
+#
+# function Get-RegistrySetting {
+#     param($key, $name)
+#     if (Test-Path $key) {
+#         return (Get-ItemProperty -Path $key).$name
+#     } else {
+#         return $null
+#     }
+# }
+#
+# function Set-RegistrySetting {
+#     param($key, $name, $value)
+#     Set-ItemProperty -Path $key -Name $name -Value $value
+# }
+#
+# $currentValue = Get-RegistrySetting -key $registryKey -name $valueName
+#
+# ... your logic to compare and set ...
