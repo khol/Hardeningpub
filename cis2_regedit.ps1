@@ -31,7 +31,7 @@ function Convert-ToRegistryRights {
     if ($permissionsMap.ContainsKey($permissionString)) {
         return $permissionsMap[$permissionString]
     } else {
-        Write-Error "Invalid permission string '$permissionString'."
+        Write-Error "Invalid permission string '$permissionString'. Valid options are: " + ($permissionsMap.Keys -join ', ')
         return $null
     }
 }
@@ -42,7 +42,7 @@ function Set-RegistryKeyPermissions {
         [Parameter(Mandatory = $true)]
         [string]$KeyPath,
         [Parameter(Mandatory = $true)]
-        [hashtable[]]$DesiredPermissions
+        [array]$DesiredPermissions
     )
 
     try {
@@ -50,35 +50,72 @@ function Set-RegistryKeyPermissions {
         $acl = Get-Acl -Path $KeyPath
         $acl.SetAccessRuleProtection($true, $false)  # Skydda ACL från ärvda regler
 
-        # Rensa alla befintliga åtkomstregler
-        $acl.Access | ForEach-Object { $acl.RemoveAccessRule($_) }
-
-        # Lägg till de önskade behörigheterna s
+        # Lägg till de önskade behörigheterna
         foreach ($permission in $DesiredPermissions) {
             $identity = New-Object System.Security.Principal.NTAccount($permission.Identity)
-
-            # Konvertera permission till RegistryRights
+            
+            # Kontrollera om permission har en giltig RegistryRights
             $rights = Convert-ToRegistryRights -permissionString $permission.FileSystemRights
-            if ($rights) {
-                $accessRule = New-Object System.Security.AccessControl.RegistryAccessRule(
-                    $identity,
-                    $rights,
-                    $permission.InheritanceFlags,
-                    $permission.PropagationFlags,
-                    "Allow"
-                )
-
-                # Lägg till åtkomstregeln på ACL
-                $acl.AddAccessRule($accessRule)
+            if ($rights -eq $null) {
+                Write-Error "Invalid permission string '$($permission.FileSystemRights)' for identity '$($permission.Identity)'"
+                return
             }
+
+            # Skapa en ny RegistryAccessRule
+            $accessRule = New-Object System.Security.AccessControl.RegistryAccessRule(
+                $identity,
+                $rights,
+                $permission.InheritanceFlags,
+                $permission.PropagationFlags,
+                "Allow"
+            )
+
+            # Lägg till åtkomstregeln på ACL
+            $acl.AddAccessRule($accessRule)
         }
 
         # Använd den uppdaterade ACL:n på registernyckeln
         Set-Acl -Path $KeyPath -AclObject $acl
-        Write-Host "  Successfully set permissions for key '$KeyPath'" -ForegroundColor Green
+        Write-Host "Successfully set permissions for key '$KeyPath'" -ForegroundColor Green
     } catch {
-        Write-Error "  Failed to set permissions for key '$KeyPath': $_"
+        Write-Error "Failed to set permissions for key '$KeyPath': $_"
     }
+}
+
+
+# Funktion för att applicera ACL och inställningar i registret
+function Set-RegistryPermissions {
+    param (
+        [string]$keyPath,
+        [array]$permissions,
+        [int]$userAuthentication
+    )
+
+    # Hämta nuvarande ACL för registernyckeln
+    $acl = Get-Acl -Path "Registry::$keyPath"
+
+    # Skapa och lägg till rättigheterna
+    foreach ($permission in $permissions) {
+        $identity = New-Object System.Security.Principal.NTAccount($permission.Identity)
+        $accessRule = New-Object System.Security.AccessControl.RegistryAccessRule(
+            $identity,
+            [System.Security.AccessControl.RegistryRights]::$($permission.FileSystemRights),
+            $permission.InheritanceFlags,
+            $permission.PropagationFlags,
+            "Allow"
+        )
+        
+        # Lägg till accessregeln i ACL
+        $acl.AddAccessRule($accessRule)
+    }
+
+    # Tillämpa den uppdaterade ACL på registernyckeln
+    Set-Acl -Path "Registry::$keyPath" -AclObject $acl
+
+    # Uppdatera UserAuthentication-värdet i registret om det behövs
+    Set-ItemProperty -Path "Registry::$keyPath" -Name "UserAuthentication" -Value $userAuthentication
+
+    Write-Host "Changes applied successfully for registry key: $keyPath"
 }
 
 
@@ -931,7 +968,6 @@ $cisControl_2_2_8 = @{
 # In simpler terms: This setting controls who is allowed to connect to the computer using Remote Desktop.
 # Recommended Value: Administrators, Remote Desktop Users
 # Possible Values: (Complex - involves setting registry key permissions and a registry value)
-
 $cisControl_2_2_6 = @{
     "ID" = "2.2.6"
     "Description" = "Ensure 'Allow log on through Remote Desktop Services' is set to 'Administrators, Remote Desktop Users'"
@@ -941,9 +977,9 @@ $cisControl_2_2_6 = @{
     "RegistryChanges" = @{
         "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" = @{
             "UserAuthentication" = 1 # 1 = Enabled (required authentication)
-            "Permissions" = @(
+            "permissions" = @(
                 @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
-                @{ Identity = "BUILTIN\Remote Desktop Users"; FileSystemRights = "ReadAndExecute"; InheritanceFlags = "None"; PropagationFlags = "None" }
+                @{ Identity = "BUILTIN\Remote Desktop Users"; FileSystemRights = "ReadKey"; InheritanceFlags = "None"; PropagationFlags = "None" }
             )
         }
     }
@@ -960,14 +996,17 @@ $cisControl_2_2_4 = @{
     "Description" = "Ensure 'Adjust memory quotas for a process' is set to 'Administrators, LOCAL SERVICE, NETWORK SERVICE'"
     "SimpleTerms" = "This setting controls who is allowed to change how much memory a program can use."
     "RecommendedValue" = "Administrators, LOCAL SERVICE, NETWORK SERVICE"
-    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "PossibleValues" = "(Multi-String SID list in registry)"
     "RegistryChanges" = @{
-        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
-            "Permissions" = @( # This is a placeholder - setting permissions is complex!
-                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
-                @{ Identity = "NT AUTHORITY\LOCAL SERVICE"; FileSystemRights = "Read"; InheritanceFlags = "None"; PropagationFlags = "None" },
-                @{ Identity = "NT AUTHORITY\NETWORK SERVICE"; FileSystemRights = "Read"; InheritanceFlags = "None"; PropagationFlags = "None" }
-            )
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
+            "SeIncreaseQuotaPrivilege" = @{
+                "Type" = "MultiString"
+                "Value" = @(
+                    "S-1-5-32-544",  # Administrators
+                    "S-1-5-19",      # LOCAL SERVICE
+                    "S-1-5-20"       # NETWORK SERVICE
+                )
+            }
         }
     }
 }
@@ -1444,21 +1483,22 @@ $cisControl_2_2_10 = @{
 # In simpler terms: This setting controls which accounts are allowed to ask Credential Manager (where Windows stores passwords and other credentials) for information. We want to prevent anyone from doing this.
 # Recommended Value: No One (remove all permissions)
 # Possible Values: (Complex - involves setting registry key permissions)
-
 $cisControl_2_2_1 = @{
     "ID" = "2.2.1"
     "Description" = "Ensure 'Access Credential Manager as a trusted caller' is set to 'No One'"
     "SimpleTerms" = "This setting controls which accounts are allowed to ask Credential Manager (where Windows stores passwords and other credentials) for information. We want to prevent anyone from doing this."
     "RecommendedValue" = "No One (remove all permissions)"
-    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "PossibleValues" = "(Multi-String SID list in registry)"
     "RegistryChanges" = @{
-        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
-            "Permissions" = @( # This is a placeholder - setting permissions is complex!
-                # Setting this to "No One" requires removing all existing permissions, which is also a complex ACL operation.
-            )
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
+            "SeTrustedCredManAccessPrivilege" = @{
+                "Type" = "MultiString"
+                "Value" = @()  # Tom lista = inga användare/grupper tilldelade
+            }
         }
     }
 }
+
 
 
 
@@ -1501,55 +1541,110 @@ $cisControls = @($cisControl_2_3_9_4,
                 $cisControl_2_2_6,
                 $cisControl_2_2_4,
                 $cisControl_2_2_39,
-                $cisControl_2_2_36,
-                $cisControl_2_2_35,
-                $cisControl_2_2_34,
-                $cisControl_2_2_33,
-                $cisControl_2_2_32,
-                $cisControl_2_2_31,
-                $cisControl_2_2_30,
-                $cisControl_2_2_3,
-                $cisControl_2_2_27,
-                $cisControl_2_2_26,
-                $cisControl_2_2_25,
-                $cisControl_2_2_24,
-                $cisControl_2_2_23,
-                $cisControl_2_2_22,
-                $cisControl_2_2_21,
-                $cisControl_2_2_15,
-                $cisControl_2_2_14,
-                $cisControl_2_2_13,
-                $cisControl_2_2_12,
-                $cisControl_2_2_11,
-                $cisControl_2_2_10,
+                #$cisControl_2_2_36,
+                #$cisControl_2_2_35,
+                #$cisControl_2_2_34,
+                #$cisControl_2_2_33,
+                #$cisControl_2_2_32,
+                #$cisControl_2_2_31,
+                #$cisControl_2_2_30,
+                #$cisControl_2_2_3,
+                #$cisControl_2_2_27,
+                #$cisControl_2_2_26,
+                #$cisControl_2_2_25,
+                #$cisControl_2_2_24,
+                #$cisControl_2_2_23,
+                #$cisControl_2_2_22,
+                #$cisControl_2_2_21,
+                #$cisControl_2_2_15,
+                #$cisControl_2_2_14,
+                #$cisControl_2_2_13,
+                #$cisControl_2_2_12,
+                #$cisControl_2_2_11,
+                #$cisControl_2_2_10,
                 $cisControl_2_2_1
                )
 
+# Loopa genom alla CIS-kontroller och applicera relevanta ändringar
 foreach ($cisControl in $cisControls) {
+    Write-Host "Processing CIS Control $($cisControl.ID)" -ForegroundColor Cyan
     Write-Host "###################################################################################" -ForegroundColor Cyan
-    Write-Host "Processing CIS Control $($cisControl.ID): $($cisControl.Description)" -ForegroundColor Cyan
-    Write-Host "  In simpler terms: $($cisControl.SimpleTerms)"
-    Write-Host "  Recommended Value: $($cisControl.RecommendedValue)"
-    Write-Host "  Possible Values: $($cisControl.PossibleValues)"
 
-    # Hämta SID för användarna/grupper om det behövs
+    if ($cisControl.Description -and $cisControl.SimpleTerms -and $cisControl.RecommendedValue -and $cisControl.PossibleValues) {
+        Write-Host "Processing CIS Control $($cisControl.ID): $($cisControl.Description)" -ForegroundColor Cyan
+        Write-Host "  In simpler terms: $($cisControl.SimpleTerms)"
+        Write-Host "  Recommended Value: $($cisControl.RecommendedValue)"
+        Write-Host "  Possible Values: $($cisControl.PossibleValues)"
+    } else {
+        Write-Host "Missing information for CIS Control $($cisControl.ID). Skipping." -ForegroundColor Red
+        continue
+    }
+
     if ($cisControl.RegistryChanges) {
-        # Exempel på SID-utskrift om registry changes är definierade
         foreach ($registryChange in $cisControl.RegistryChanges.GetEnumerator()) {
-            Write-Host "Registry Change for $($registryChange.Key):"
-            
-            # Här hämtar vi SID för de grupper som definieras i "Permissions"
-            foreach ($permission in $registryChange.Value.Permissions) {
-                $sid = Get-SID -accountName $permission.Identity
-                Write-Host "  SID for $($permission.Identity): $sid"
+            $keyPath = $registryChange.Key
+            $keyDetails = $registryChange.Value
+
+            Write-Host "Registry Change for ${keyPath}:"
+
+            # Om Permissions finns, hantera ACL
+            if ($keyDetails.ContainsKey("Permissions")) {
+                foreach ($permission in $keyDetails.Permissions) {
+                    $sid = Get-SID -accountName $permission.Identity
+                    Write-Host "  SID for $($permission.Identity): $sid"
+                }
+
+                try {
+                    $acl = Get-Acl -Path "Registry::$keyPath"
+
+                    foreach ($permission in $keyDetails.Permissions) {
+                        $identity = New-Object System.Security.Principal.NTAccount($permission.Identity)
+                        $rights = [System.Security.AccessControl.RegistryRights]::ReadKey
+                        if ($permission.FileSystemRights -eq "FullControl") {
+                            $rights = [System.Security.AccessControl.RegistryRights]::FullControl
+                        }
+
+                        $accessRule = New-Object System.Security.AccessControl.RegistryAccessRule(
+                            $identity,
+                            $rights,
+                            $permission.InheritanceFlags,
+                            $permission.PropagationFlags,
+                            "Allow"
+                        )
+                        $acl.AddAccessRule($accessRule)
+                    }
+
+                    Set-Acl -Path "Registry::$keyPath" -AclObject $acl
+                    Write-Host "Successfully set permissions for key '$keyPath'" -ForegroundColor Green
+
+                } catch {
+                    Write-Host "Failed to set permissions for key '$keyPath': $_" -ForegroundColor Red
+                }
+            }
+
+            # Om UserAuthentication eller andra direkta värden finns
+            if ($keyDetails.ContainsKey("UserAuthentication")) {
+                try {
+                    Set-ItemProperty -Path "Registry::$keyPath" -Name "UserAuthentication" -Value $keyDetails.UserAuthentication
+                    Write-Host "Set UserAuthentication to $($keyDetails.UserAuthentication) for $keyPath"
+                } catch {
+                    Write-Host "Failed to set UserAuthentication: $_" -ForegroundColor Red
+                }
+            }
+
+            # Om MultiString-värde ska sättas (t.ex. för 2.2.4)
+            if ($keyDetails.Type -eq "MultiString" -and $keyDetails.Value) {
+                try {
+                    Set-ItemProperty -Path "Registry::$keyPath" -Name "" -Value $keyDetails.Value
+                    Write-Host "Successfully set multi-string SID list for $keyPath" -ForegroundColor Green
+                } catch {
+                    Write-Host "Failed to set multi-string value for ${keyPath}: $_" -ForegroundColor Red
+                }
             }
         }
-
-        Set-RegistryKeys -Table $cisControl.RegistryChanges -RunAsAdmin
     }
 
     if ($cisControl.Action) {
-        # Kör funktionen som är lagrad
         & $cisControl.Action
     }
 
