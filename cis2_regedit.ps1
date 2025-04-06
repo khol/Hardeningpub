@@ -8,7 +8,7 @@ function Set-RegistryKeys {
     param (
         [Parameter(Mandatory = $true)]
         [hashtable]$table,
-        [switch]$RunAsAdmin  # <-- This is how the parameter is defined!
+        [switch]$RunAsAdmin
     )
 
     # Check if running as admin
@@ -48,8 +48,18 @@ function Set-RegistryKeys {
                     $currentValue = $null
                 }
 
+                # Handle Permissions separately
+                if ($valueName -eq "Permissions") {
+                    $desiredAccessRules = New-RegistryAccessRules -KeyPath $fullPath -Permissions $value
+                    $acl = Get-Acl -Path $fullPath
+                    $acl.SetAccessRulesProtect = $true # Prevent inheritance
+                    $acl.Access.Clear()
+                    $acl.Access.Add($desiredAccessRules)
+                    Set-Acl -Path $fullPath -AclObject $acl
+                    Write-Host "  Set registry key permissions for key '$fullPath'." -ForegroundColor Green
+                }
                 # Set the value only if it's different or doesn't exist
-                if ($currentValue -ne $value -or $currentValue -eq $null) {
+                elseif ($currentValue -ne $value -or $currentValue -eq $null) {
                     try {
                         New-ItemProperty -Path $fullPath -Name $valueName -Value $value -PropertyType $type -Force | Out-Null
                         Write-Host "  Set registry value '$valueName' in key '$fullPath' to '$value' (Type: $type)." -ForegroundColor Green
@@ -771,7 +781,7 @@ $cisControl_2_2_6 = @{
     "RegistryChanges" = @{
         "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" = @{
             "UserAuthentication" = 1 # 1 = Enabled (required authentication)
-            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+            "Permissions" = @(
                 @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
                 @{ Identity = "BUILTIN\Remote Desktop Users"; FileSystemRights = "ReadAndExecute"; InheritanceFlags = "None"; PropagationFlags = "None" }
             )
@@ -823,6 +833,474 @@ $cisControl_2_2_39 = @{
     }
 }
 
+# CIS Control: 2.2.36. (L1) Ensure 'Replace a process level token' is set to 'LOCAL SERVICE, NETWORK SERVICE'
+# In simpler terms: This setting controls which system services are allowed to use a special way of getting access to resources. We want to limit this to specific, trusted services.
+# Recommended Value: LOCAL SERVICE, NETWORK SERVICE
+# Possible Values: A list of user or group names
+
+$cisControl_2_2_36 = @{
+    "ID" = "2.2.36"
+    "Description" = "Ensure 'Replace a process level token' is set to 'LOCAL SERVICE, NETWORK SERVICE'"
+    "SimpleTerms" = "This setting controls which system services are allowed to use a special way of getting access to resources. We want to limit this to specific, trusted services."
+    "RecommendedValue" = "LOCAL SERVICE, NETWORK SERVICE"
+    "PossibleValues" = "A list of user or group names"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "NT AUTHORITY\LOCAL SERVICE"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "NT AUTHORITY\NETWORK SERVICE"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.35. (L1) Ensure 'Profile system performance' is set to 'Administrators, NT SERVICE\WdiServiceHost'
+# In simpler terms: This setting controls who is allowed to collect detailed information about how the system is performing.
+# Recommended Value: Administrators, NT SERVICE\WdiServiceHost
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_35 = @{
+    "ID" = "2.2.35"
+    "Description" = "Ensure 'Profile system performance' is set to 'Administrators, NT SERVICE\WdiServiceHost'"
+    "SimpleTerms" = "This setting controls who is allowed to collect detailed information about how the system is performing."
+    "RecommendedValue" = "Administrators, NT SERVICE\WdiServiceHost"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "NT SERVICE\WdiServiceHost"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.34. (L1) Ensure 'Profile single process' is set to 'Administrators'
+# In simpler terms: This setting controls who is allowed to collect detailed information about how a single program is running.
+# Recommended Value: Administrators
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_34 = @{
+    "ID" = "2.2.34"
+    "Description" = "Ensure 'Profile single process' is set to 'Administrators'"
+    "SimpleTerms" = "This setting controls who is allowed to collect detailed information about how a single program is running."
+    "RecommendedValue" = "Administrators"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.33. (L1) Ensure 'Perform volume maintenance tasks' is set to 'Administrators'
+# In simpler terms: This setting controls who is allowed to do things like defragmenting hard drives or checking them for errors.
+# Recommended Value: Administrators
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_33 = @{
+    "ID" = "2.2.33"
+    "Description" = "Ensure 'Perform volume maintenance tasks' is set to 'Administrators'"
+    "SimpleTerms" = "This setting controls who is allowed to do things like defragmenting hard drives or checking them for errors."
+    "RecommendedValue" = "Administrators"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.32. (L1) Ensure 'Modify firmware environment values' is set to 'Administrators'
+# In simpler terms: This setting controls who is allowed to change settings in the computer's firmware (the software that starts the computer).
+# Recommended Value: Administrators
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_32 = @{
+    "ID" = "2.2.32"
+    "Description" = "Ensure 'Modify firmware environment values' is set to 'Administrators'"
+    "SimpleTerms" = "This setting controls who is allowed to change settings in the computer's firmware (the software that starts the computer)."
+    "RecommendedValue" = "Administrators"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.31. (L1) Ensure 'Modify an object label' is set to 'No One'
+# In simpler terms: This setting controls who is allowed to change the security labels on files and other system objects. We want to prevent anyone from doing this.
+# Recommended Value: No One
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_31 = @{
+    "ID" = "2.2.31"
+    "Description" = "Ensure 'Modify an object label' is set to 'No One'"
+    "SimpleTerms" = "This setting controls who is allowed to change the security labels on files and other system objects. We want to prevent anyone from doing this."
+    "RecommendedValue" = "No One"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                # Setting this to "No One" requires removing all existing permissions, which is also a complex ACL operation.
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.30. (L1) Ensure 'Manage auditing and security log' is set to 'Administrators'
+# In simpler terms: This setting controls who is allowed to manage the security log, where important security events are recorded.
+# Recommended Value: Administrators
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_30 = @{
+    "ID" = "2.2.30"
+    "Description" = "Ensure 'Manage auditing and security log' is set to 'Administrators'"
+    "SimpleTerms" = "This setting controls who is allowed to manage the security log, where important security events are recorded."
+    "RecommendedValue" = "Administrators"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.3. (L1) Ensure 'Act as part of the operating system' is set to 'No One'
+# In simpler terms: This setting controls which accounts are allowed to act as a core part of Windows itself, which is a very powerful ability. We want to prevent anyone from doing this.
+# Recommended Value: No One
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_3 = @{
+    "ID" = "2.2.3"
+    "Description" = "Ensure 'Act as part of the operating system' is set to 'No One'"
+    "SimpleTerms" = "This setting controls which accounts are allowed to act as a core part of Windows itself, which is a very powerful ability. We want to prevent anyone from doing this."
+    "RecommendedValue" = "No One"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                # Setting this to "No One" requires removing all existing permissions, which is also a complex ACL operation.
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.27. (L1) Ensure 'Lock pages in memory' is set to 'No One'
+# In simpler terms: This setting controls who is allowed to keep data in the computer's memory, preventing it from being swapped to the hard drive. We want to prevent anyone from doing this.
+# Recommended Value: No One
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_27 = @{
+    "ID" = "2.2.27"
+    "Description" = "Ensure 'Lock pages in memory' is set to 'No One'"
+    "SimpleTerms" = "This setting controls who is allowed to keep data in the computer's memory, preventing it from being swapped to the hard drive. We want to prevent anyone from doing this."
+    "RecommendedValue" = "No One"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                # Setting this to "No One" requires removing all existing permissions, which is also a complex ACL operation.
+            )
+        }
+    }
+}
+
+# CIS Control: 2.2.26. (L1) Ensure 'Load and unload device drivers' is set to 'Administrators'
+# In simpler terms: This setting controls who is allowed to install and remove the software that makes your computer work with hardware (like printers or graphics cards).
+# Recommended Value: Administrators
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_26 = @{
+    "ID" = "2.2.26"
+    "Description" = "Ensure 'Load and unload device drivers' is set to 'Administrators'"
+    "SimpleTerms" = "This setting controls who is allowed to install and remove the software that makes your computer work with hardware (like printers or graphics cards)."
+    "RecommendedValue" = "Administrators"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.25. (L1) Ensure 'Increase scheduling priority' is set to 'Administrators, Window Manager\Window Manager Group'
+# In simpler terms: This setting controls who is allowed to make programs run faster than normal.
+# Recommended Value: Administrators, NT SERVICE\Winmgmt
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_25 = @{
+    "ID" = "2.2.25"
+    "Description" = "Ensure 'Increase scheduling priority' is set to 'Administrators, Window Manager\Window Manager Group'"
+    "SimpleTerms" = "This setting controls who is allowed to make programs run faster than normal."
+    "RecommendedValue" = "Administrators, NT SERVICE\Winmgmt"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "NT SERVICE\Winmgmt"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.24. (L1) Ensure 'Impersonate a client after authentication' is set to 'Administrators, LOCAL SERVICE, NETWORK SERVICE, SERVICE'
+# In simpler terms: This setting controls which accounts are allowed to temporarily "pretend" to be another user or service to access resources.
+# Recommended Value: Administrators, LOCAL SERVICE, NETWORK SERVICE, SERVICE
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_24 = @{
+    "ID" = "2.2.24"
+    "Description" = "Ensure 'Impersonate a client after authentication' is set to 'Administrators, LOCAL SERVICE, NETWORK SERVICE, SERVICE'"
+    "SimpleTerms" = "This setting controls which accounts are allowed to temporarily 'pretend' to be another user or service to access resources."
+    "RecommendedValue" = "Administrators, LOCAL SERVICE, NETWORK SERVICE, SERVICE"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "NT AUTHORITY\LOCAL SERVICE"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "NT AUTHORITY\NETWORK SERVICE"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "NT AUTHORITY\SERVICE"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.23. (L1) Ensure 'Generate security audits' is set to 'LOCAL SERVICE, NETWORK SERVICE'
+# In simpler terms: This setting controls which system services are allowed to create records in the security log, which tracks important security events.
+# Recommended Value: LOCAL SERVICE, NETWORK SERVICE
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_23 = @{
+    "ID" = "2.2.23"
+    "Description" = "Ensure 'Generate security audits' is set to 'LOCAL SERVICE, NETWORK SERVICE'"
+    "SimpleTerms" = "This setting controls which system services are allowed to create records in the security log, which tracks important security events."
+    "RecommendedValue" = "LOCAL SERVICE, NETWORK SERVICE"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "NT AUTHORITY\LOCAL SERVICE"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "NT AUTHORITY\NETWORK SERVICE"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.22. (L1) Ensure 'Force shutdown from a remote system' is set to 'Administrators'
+# In simpler terms: This setting controls who is allowed to shut down the computer from another computer over the network.
+# Recommended Value: Administrators
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_22 = @{
+    "ID" = "2.2.22"
+    "Description" = "Ensure 'Force shutdown from a remote system' is set to 'Administrators'"
+    "SimpleTerms" = "This setting controls who is allowed to shut down the computer from another computer over the network."
+    "RecommendedValue" = "Administrators"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.21. (L1) Ensure 'Enable computer and user accounts to be trusted for delegation' is set to 'No One'
+# In simpler terms: This setting controls who is allowed to let a computer or user account act on their behalf to access resources on other computers. We want to prevent anyone from doing this.
+# Recommended Value: No One (remove all permissions)
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_21 = @{
+    "ID" = "2.2.21"
+    "Description" = "Ensure 'Enable computer and user accounts to be trusted for delegation' is set to 'No One'"
+    "SimpleTerms" = "This setting controls who is allowed to let a computer or user account act on their behalf to access resources on other computers. We want to prevent anyone from doing this."
+    "RecommendedValue" = "No One (remove all permissions)"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                # Setting this to "No One" requires removing all existing permissions, which is also a complex ACL operation.
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.15. (L1) Ensure 'Debug programs' is set to 'Administrators'
+# In simpler terms: This setting controls who is allowed to examine and modify the inner workings of running programs, which is a powerful debugging capability.
+# Recommended Value: Administrators
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_15 = @{
+    "ID" = "2.2.15"
+    "Description" = "Ensure 'Debug programs' is set to 'Administrators'"
+    "SimpleTerms" = "This setting controls who is allowed to examine and modify the inner workings of running programs, which is a powerful debugging capability."
+    "RecommendedValue" = "Administrators"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.14. (L1) Ensure 'Create symbolic links' is set to 'Administrators'
+# In simpler terms: This setting controls who is allowed to create special types of shortcuts that can point to files or folders in other locations.
+# Recommended Value: Administrators
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_14 = @{
+    "ID" = "2.2.14"
+    "Description" = "Ensure 'Create symbolic links' is set to 'Administrators'"
+    "SimpleTerms" = "This setting controls who is allowed to create special types of shortcuts that can point to files or folders in other locations."
+    "RecommendedValue" = "Administrators"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+# CIS Control: 2.2.13. (L1) Ensure 'Create permanent shared objects' is set to 'No One'
+# In simpler terms: This setting controls who is allowed to create special objects in the system that can be accessed by multiple programs. We want to prevent anyone from doing this.
+# Recommended Value: No One (remove all permissions)
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_13 = @{
+    "ID" = "2.2.13"
+    "Description" = "Ensure 'Create permanent shared objects' is set to 'No One'"
+    "SimpleTerms" = "This setting controls who is allowed to create special objects in the system that can be accessed by multiple programs. We want to prevent anyone from doing this."
+    "RecommendedValue" = "No One (remove all permissions)"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                # Setting this to "No One" requires removing all existing permissions, which is also a complex ACL operation.
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.12. (L1) Ensure 'Create global objects' is set to 'Administrators, LOCAL SERVICE, NETWORK SERVICE, SERVICE'
+# In simpler terms: This setting controls which accounts are allowed to create objects that can be accessed by any program on the computer.
+# Recommended Value: Administrators, LOCAL SERVICE, NETWORK SERVICE, SERVICE
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_12 = @{
+    "ID" = "2.2.12"
+    "Description" = "Ensure 'Create global objects' is set to 'Administrators, LOCAL SERVICE, NETWORK SERVICE, SERVICE'"
+    "SimpleTerms" = "This setting controls which accounts are allowed to create objects that can be accessed by any program on the computer."
+    "RecommendedValue" = "Administrators, LOCAL SERVICE, NETWORK SERVICE, SERVICE"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "NT AUTHORITY\LOCAL SERVICE"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "NT AUTHORITY\NETWORK SERVICE"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "NT AUTHORITY\SERVICE"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+# CIS Control: 2.2.11. (L1) Ensure 'Create a token object' is set to 'No One'
+# In simpler terms: This setting controls who is allowed to create special security objects called "tokens," which are used to control access to resources. We want to prevent anyone from doing this.
+# Recommended Value: No One (remove all permissions)
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_11 = @{
+    "ID" = "2.2.11"
+    "Description" = "Ensure 'Create a token object' is set to 'No One'"
+    "SimpleTerms" = "This setting controls who is allowed to create special security objects called 'tokens,' which are used to control access to resources. We want to prevent anyone from doing this."
+    "RecommendedValue" = "No One (remove all permissions)"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                # Setting this to "No One" requires removing all existing permissions, which is also a complex ACL operation.
+            )
+        }
+    }
+}
+
+# CIS Control: 2.2.10. (L1) Ensure 'Create a pagefile' is set to 'Administrators'
+# In simpler terms: This setting controls who is allowed to create the "pagefile," which is a special file on your hard drive that Windows uses as extra memory.
+# Recommended Value: Administrators
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_10 = @{
+    "ID" = "2.2.10"
+    "Description" = "Ensure 'Create a pagefile' is set to 'Administrators'"
+    "SimpleTerms" = "This setting controls who is allowed to create the 'pagefile,' which is a special file on your hard drive that Windows uses as extra memory."
+    "RecommendedValue" = "Administrators"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.1. (L1) Ensure 'Access Credential Manager as a trusted caller' is set to 'No One'
+# In simpler terms: This setting controls which accounts are allowed to ask Credential Manager (where Windows stores passwords and other credentials) for information. We want to prevent anyone from doing this.
+# Recommended Value: No One (remove all permissions)
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_1 = @{
+    "ID" = "2.2.1"
+    "Description" = "Ensure 'Access Credential Manager as a trusted caller' is set to 'No One'"
+    "SimpleTerms" = "This setting controls which accounts are allowed to ask Credential Manager (where Windows stores passwords and other credentials) for information. We want to prevent anyone from doing this."
+    "RecommendedValue" = "No One (remove all permissions)"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                # Setting this to "No One" requires removing all existing permissions, which is also a complex ACL operation.
+            )
+        }
+    }
+}
+
+
 
 # Process CIS controls
 $cisControls = @($cisControl_2_3_9_4, 
@@ -862,7 +1340,29 @@ $cisControls = @($cisControl_2_3_9_4,
                 $cisControl_2_2_8,
                 $cisControl_2_2_6,
                 $cisControl_2_2_4,
-                $cisControl_2_2_39
+                $cisControl_2_2_39,
+                $cisControl_2_2_36,
+                $cisControl_2_2_35,
+                $cisControl_2_2_34,
+                $cisControl_2_2_33,
+                $cisControl_2_2_32,
+                $cisControl_2_2_31,
+                $cisControl_2_2_30,
+                $cisControl_2_2_3,
+                $cisControl_2_2_27,
+                $cisControl_2_2_26,
+                $cisControl_2_2_25,
+                $cisControl_2_2_24,
+                $cisControl_2_2_23,
+                $cisControl_2_2_22,
+                $cisControl_2_2_21,
+                $cisControl_2_2_15,
+                $cisControl_2_2_14,
+                $cisControl_2_2_13,
+                $cisControl_2_2_12,
+                $cisControl_2_2_11,
+                $cisControl_2_2_10,
+                $cisControl_2_2_1
                )
 
 foreach ($cisControl in $cisControls) {
