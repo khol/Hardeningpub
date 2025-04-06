@@ -1048,6 +1048,7 @@ $cisControl_2_2_36 = @{
     "RegistryChanges" = @{
         "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
             "Type" = "MultiString"
+            "Name" = "Default"  # Lägg till Name här för MultiString-värdet
             "Value" = @(
                 "S-1-5-19",  # LOCAL SERVICE
                 "S-1-5-20"   # NETWORK SERVICE
@@ -1659,8 +1660,18 @@ foreach ($cisControl in $cisControls) {
 
             # Om MultiString-värde ska sättas
             if ($keyDetails.ContainsKey("Value") -and $keyDetails.Type -eq "MultiString") {
-                $valueName = $keyDetails.Name  # MultiString har ett namn
+                $valueName = $keyDetails.Name  # Kontrollera om det finns ett namn för multi-string värdet
                 $value = $keyDetails.Value
+
+                # Se till att både Name och Value är definierade
+                if (-not $valueName) {
+                    Write-Host "No value name specified for multi-string. Skipping." -ForegroundColor Red
+                    continue
+                }
+                if (-not $value) {
+                    Write-Host "No value specified for multi-string. Skipping." -ForegroundColor Red
+                    continue
+                }
 
                 try {
                     Set-ItemProperty -Path "Registry::$keyPath" -Name $valueName -Value $value
@@ -1669,6 +1680,7 @@ foreach ($cisControl in $cisControls) {
                     Write-Host "Failed to set multi-string value for ${keyPath}\${valueName}: $_" -ForegroundColor Red
                 }
             }
+
 
             # Om det är ett vanligt strängvärde som ska sättas
             if ($keyDetails.ContainsKey("Value") -and $keyDetails.Type -eq "String") {
