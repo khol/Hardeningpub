@@ -1,4 +1,7 @@
-Set-ExecutionPolicy RemoteSigned
+ 
+
+Write-Host "  Run: - Set-ExecutionPolicy RemoteSigned "
+
 
 
 # Helper function to check if running as admin (place at the beginning of your script)
@@ -95,16 +98,19 @@ if (-not (Get-Module -Name PSRegistry -ListAvailable)) {
 # In simpler terms: This setting controls how long a user's account stays locked out after too many failed login attempts.
 # Recommended Value: 15 minutes
 # Possible Values: Any integer greater than 0
+# CIS Control: 1.2.4. (L1) Ensure 'Reset account lockout counter after' is set to '15 or more minute(s)'
+# In simpler terms: This setting controls how long a user's account stays locked out after too many failed login attempts.
+# Recommended Value: 15 minutes
+# Possible Values: Any integer greater than 0
 $cisControl_1_2_4 = @{
     "ID" = "1.2.4"
     "Description" = "Ensure 'Reset account lockout counter after' is set to '15 or more minute(s)'"
     "SimpleTerms" = "This setting controls how long a user's account stays locked out after too many failed login attempts."
     "RecommendedValue" = "15 minutes"
     "PossibleValues" = "Any integer greater than 0"
-    "RegistryChanges" = @{
-        "HKLM\SECURITY\Policy\PolAdt" = @{
-            "LockoutResetMin" = 15 # Value in minutes
-        }
+    "ApplyMethod" = "NetAccounts" # Use a consistent naming convention
+    "Parameters" = @{
+        "LockoutResetMin" = 15 # Value in minutes
     }
 }
 
@@ -114,6 +120,7 @@ $cisControl_1_2_4 = @{
 # Possible Values: Any positive integer (0 disables)
 $cisControl_1_2_3 = @{
     "ID" = "1.2.3"
+    "ApplyMethod" = "Registry"
     "Description" = "Ensure 'Allow Administrator account lockout' is set to 'Enabled'"
     "SimpleTerms" = "This setting makes sure that even the main administrator account can be locked out if someone tries to guess the password too many times."
     "RecommendedValue" = "30 minutes"
@@ -128,18 +135,16 @@ $cisControl_1_2_3 = @{
 # CIS Control: 1.2.1. (L1) Ensure 'Account lockout duration' is set to '15 or more minute(s)'
 # In simpler terms: This setting controls how long an account stays locked out after too many failed login attempts.
 # Recommended Value: 15 minutes
-# Possible Values: Any positive integer
-
+# Possible Values: Any positive integer greater than 0
 $cisControl_1_2_1 = @{
     "ID" = "1.2.1"
     "Description" = "Ensure 'Account lockout duration' is set to '15 or more minute(s)'"
     "SimpleTerms" = "This setting controls how long an account stays locked out after too many failed login attempts."
     "RecommendedValue" = "15 minutes"
-    "PossibleValues" = "Any positive integer"
-    "RegistryChanges" = @{ # This is likely incorrect. Account lockout is usually a security policy.
-        "HKLM\SECURITY\Policy\PolAdt" = @{ # You'll need to verify the correct key/value
-            "LockoutDuration" = 15 # Value in minutes
-        }
+    "PossibleValues" = "Any integer greater than 0"
+    "ApplyMethod" = "NetAccounts"
+    "Parameters" = @{
+        "LockoutDuration" = 15 # Value in minutes
     }
 }
 
@@ -149,6 +154,7 @@ $cisControl_1_2_1 = @{
 # Possible Values: Enabled, Disabled
 $cisControl_1_1_7 = @{
     "ID" = "1.1.7"
+    "ApplyMethod" = "Registry"
     "Description" = "Ensure 'Store passwords using reversible encryption' is set to 'Disabled'"
     "SimpleTerms" = "This setting makes sure Windows doesn't store passwords in a way that can be easily turned back into the original password."
     "RecommendedValue" = "Disabled"
@@ -167,6 +173,7 @@ $cisControl_1_1_7 = @{
 # Possible Values: Enabled, Disabled
 $cisControl_1_1_5 = @{
     "ID" = "1.1.5"
+    "ApplyMethod" = "Registry"
     "Description" = "Ensure 'Password must meet complexity requirements' is set to 'Enabled'"
     "SimpleTerms" = "This setting forces users to create strong passwords that are hard to guess."
     "RecommendedValue" = "Enabled"
@@ -189,10 +196,9 @@ $cisControl_1_1_1 = @{
     "SimpleTerms" = "This setting makes sure users can't reuse their old passwords for a certain number of changes."
     "RecommendedValue" = "24 passwords"
     "PossibleValues" = "Any integer greater than 0"
-    "RegistryChanges" = @{ # This might be incorrect. Password policies are usually not set directly in the registry.
-        "HKLM\SECURITY\Policy\PolAdt" = @{ # You'll need to verify the correct key/value
-            "PasswordHistorySize" = 24
-        }
+    "ApplyMethod" = "SecPolicy" # or "GroupPolicy" if you use that
+    "Parameters" = @{
+        "HistoryCount" = 24
     }
 }
 
@@ -211,9 +217,27 @@ foreach ($cisControl in $cisControls) {
     Write-Host "  Recommended Value: $($cisControl.RecommendedValue)"
     Write-Host "  Possible Values: $($cisControl.PossibleValues)"
 
-    if ($cisControl.RegistryChanges) {
-        Set-RegistryKeys -Table $cisControl.RegistryChanges -RunAsAdmin
+    try {
+        switch ($cisControl.ApplyMethod) {
+            "Registry" {
+                if ($cisControl.RegistryChanges) {
+                    Set-RegistryKeys -Table $cisControl.RegistryChanges -RunAsAdmin
+                }
+            }
+            "net accounts" {
+                if ($cisControl.Parameters) {
+                    Set-AccountLockoutPolicy_1_2_4 @($cisControl.Parameters) # Pass parameters
+                }
+            }
+            default {
+                if ($cisControl.RegistryChanges) {
+                    Set-RegistryKeys -Table $cisControl.RegistryChanges -RunAsAdmin
+                }
+            }
+        }
+    } catch {
+        Write-Error "  Failed to apply CIS Control $($cisControl.ID): $_"
     }
 
     Write-Host "###################################################################################" -ForegroundColor Cyan
-}
+} 
