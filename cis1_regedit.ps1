@@ -24,7 +24,8 @@ if (-not (Get-Module -Name PSRegistry -ListAvailable)) {
 function Set-RegistryKeys {
     param (
         [Parameter(Mandatory=$true)]
-        [hashtable]$table
+        [hashtable]$table,
+        [switch]$RunAsAdmin  # <-- This is how the parameter is defined!
     )
     foreach ($key in $table.Keys) {
         try {
