@@ -55,7 +55,8 @@ function Set-RegistryKeys {
 function Set-UserRegistryKeys {
     param (
         [Parameter(Mandatory=$true)]
-        [hashtable]$Table
+        [hashtable]$Table,
+        [switch]$RunAsAdmin  # <-- This is how the parameter is defined!
     )
 
     # Get all user SIDs from HKEY_USERS except system SIDs
