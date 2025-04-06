@@ -1,6 +1,39 @@
-# Helper function to check if running as admin (place at the beginning of your script)
+# Helper function to check if running as admin
 function Is-Admin {
     return ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+}
+
+# Function to set registry key permissions
+function Set-RegistryKeyPermissions {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$KeyPath,
+        [Parameter(Mandatory = $true)]
+        [hashtable[]]$DesiredPermissions
+    )
+
+    try {
+        $acl = Get-Acl -Path $KeyPath
+        $acl.SetAccessRulesProtect = $true  # Prevent inheritance
+        $acl.Access.Clear()
+
+        foreach ($permission in $DesiredPermissions) {
+            $identity = New-Object System.Security.Principal.NTAccount($permission.Identity)
+            $accessRule = New-Object System.Security.AccessControl.RegistryAccessRule(
+                $identity,
+                $permission.FileSystemRights,
+                $permission.InheritanceFlags,
+                $permission.PropagationFlags,
+                "Allow"  # Or "Deny" if needed
+            )
+            $acl.Access.Add($accessRule)
+        }
+
+        Set-Acl -Path $KeyPath -AclObject $acl
+        Write-Host "  Successfully set permissions for key '$KeyPath'" -ForegroundColor Green
+    } catch {
+        Write-Error "  Failed to set permissions for key '$KeyPath': $_"
+    }
 }
 
 # Function to set registry keys
@@ -50,13 +83,7 @@ function Set-RegistryKeys {
 
                 # Handle Permissions separately
                 if ($valueName -eq "Permissions") {
-                    $desiredAccessRules = New-RegistryAccessRules -KeyPath $fullPath -Permissions $value
-                    $acl = Get-Acl -Path $fullPath
-                    $acl.SetAccessRulesProtect = $true # Prevent inheritance
-                    $acl.Access.Clear()
-                    $acl.Access.Add($desiredAccessRules)
-                    Set-Acl -Path $fullPath -AclObject $acl
-                    Write-Host "  Set registry key permissions for key '$fullPath'." -ForegroundColor Green
+                    Set-RegistryKeyPermissions -KeyPath $fullPath -DesiredPermissions $value
                 }
                 # Set the value only if it's different or doesn't exist
                 elseif ($currentValue -ne $value -or $currentValue -eq $null) {
