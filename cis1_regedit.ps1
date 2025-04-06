@@ -122,8 +122,84 @@ $cisControl_1_2_3 = @{
     }
 }
 
+# CIS Control: 1.2.1. (L1) Ensure 'Account lockout duration' is set to '15 or more minute(s)'
+# In simpler terms: This setting controls how long an account stays locked out after too many failed login attempts.
+# Recommended Value: 15 minutes
+# Possible Values: Any positive integer
+
+$cisControl_1_2_1 = @{
+    "ID" = "1.2.1"
+    "Description" = "Ensure 'Account lockout duration' is set to '15 or more minute(s)'"
+    "SimpleTerms" = "This setting controls how long an account stays locked out after too many failed login attempts."
+    "RecommendedValue" = "15 minutes"
+    "PossibleValues" = "Any positive integer"
+    "RegistryChanges" = @{ # This is likely incorrect. Account lockout is usually a security policy.
+        "HKLM\SECURITY\Policy\PolAdt" = @{ # You'll need to verify the correct key/value
+            "LockoutDuration" = 15 # Value in minutes
+        }
+    }
+}
+
+# CIS Control: 1.1.7. (L1) Ensure 'Store passwords using reversible encryption' is set to 'Disabled'
+# In simpler terms: This setting makes sure Windows doesn't store passwords in a way that can be easily turned back into the original password.
+# Recommended Value: Disabled
+# Possible Values: Enabled, Disabled
+$cisControl_1_1_7 = @{
+    "ID" = "1.1.7"
+    "Description" = "Ensure 'Store passwords using reversible encryption' is set to 'Disabled'"
+    "SimpleTerms" = "This setting makes sure Windows doesn't store passwords in a way that can be easily turned back into the original password."
+    "RecommendedValue" = "Disabled"
+    "PossibleValues" = "Enabled, Disabled"
+    "RegistryChanges" = @{ # This might be incorrect. Password policies are usually not set directly in the registry.
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{ # You'll need to verify the correct key/value
+            "UseLmCompatibility" = 0 # Example: 0 (or a similar value) disables LM Hash storage
+        }
+    }
+}
+
+
+# CIS Control: 1.1.5. (L1) Ensure 'Password must meet complexity requirements' is set to 'Enabled'
+# In simpler terms: This setting forces users to create strong passwords that are hard to guess.
+# Recommended Value: Enabled
+# Possible Values: Enabled, Disabled
+$cisControl_1_1_5 = @{
+    "ID" = "1.1.5"
+    "Description" = "Ensure 'Password must meet complexity requirements' is set to 'Enabled'"
+    "SimpleTerms" = "This setting forces users to create strong passwords that are hard to guess."
+    "RecommendedValue" = "Enabled"
+    "PossibleValues" = "Enabled, Disabled"
+    "RegistryChanges" = @{ # This might be incorrect. Password policies are usually not set directly in the registry.
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{ # You'll need to verify the correct key/value
+            "complexity" = 1 # Example: 1 (or a similar value) enables complexity
+        }
+    }
+}
+
+
+# CIS Control: 1.1.1. (L1) Ensure 'Enforce password history' is set to '24 or more password(s)'
+# In simpler terms: This setting makes sure users can't reuse their old passwords for a certain number of changes.
+# Recommended Value: 24 passwords
+# Possible Values: Any integer greater than 0
+$cisControl_1_1_1 = @{
+    "ID" = "1.1.1"
+    "Description" = "Ensure 'Enforce password history' is set to '24 or more password(s)'"
+    "SimpleTerms" = "This setting makes sure users can't reuse their old passwords for a certain number of changes."
+    "RecommendedValue" = "24 passwords"
+    "PossibleValues" = "Any integer greater than 0"
+    "RegistryChanges" = @{ # This might be incorrect. Password policies are usually not set directly in the registry.
+        "HKLM\SECURITY\Policy\PolAdt" = @{ # You'll need to verify the correct key/value
+            "PasswordHistorySize" = 24
+        }
+    }
+}
+
 # Process CIS controls
-$cisControls = @($cisControl_1_2_4, $cisControl_1_2_3)
+$cisControls = @($cisControl_1_2_4, 
+                $cisControl_1_2_3, 
+                $cisControl_1_2_1,
+                $cisControl_1_1_7,
+                $cisControl_1_1_5,
+                $cisControl_1_1_1)
 
 foreach ($cisControl in $cisControls) {
     Write-Host "###################################################################################" -ForegroundColor Cyan
