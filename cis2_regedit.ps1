@@ -4,6 +4,7 @@ function Is-Admin {
 }
 
 # Function to set registry key permissions
+# Function to set registry key permissions
 function Set-RegistryKeyPermissions {
     param (
         [Parameter(Mandatory = $true)]
@@ -14,7 +15,7 @@ function Set-RegistryKeyPermissions {
 
     try {
         $acl = Get-Acl -Path $KeyPath
-        $acl.SetAccessRulesProtect = $true  # Prevent inheritance
+        $acl.SetAccessRulesProtect($true, $true)  # Corrected line: Call as a method!
         $acl.Access.Clear()
 
         foreach ($permission in $DesiredPermissions) {
