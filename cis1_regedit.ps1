@@ -8,7 +8,7 @@ function Set-RegistryKeys {
     param (
         [Parameter(Mandatory = $true)]
         [hashtable]$table,
-        [switch]$RunAsAdmin
+        [switch]$RunAsAdmin  # <-- This is how the parameter is defined!
     )
 
     # Check if running as admin
