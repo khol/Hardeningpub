@@ -1016,28 +1016,48 @@ $cisControl_2_2_4 = @{
 # In simpler terms: This setting controls who is allowed to become the owner of files and folders. We want to limit this to administrators.
 # Recommended Value: Administrators
 # Possible Values: (Complex - involves setting registry key permissions)
-
 $cisControl_2_2_39 = @{
     "ID" = "2.2.39"
     "Description" = "Ensure 'Take ownership of files or other objects' is set to 'Administrators'"
     "SimpleTerms" = "This setting controls who is allowed to become the owner of files and folders. We want to limit this to administrators."
     "RecommendedValue" = "Administrators"
-    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "PossibleValues" = "(Multi-String SID list in registry)"
     "RegistryChanges" = @{
-        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
-            "Permissions" = @( # This is a placeholder - setting permissions is complex!
-                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
-            )
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
+            "SeTakeOwnershipPrivilege" = @{
+                "Type" = "MultiString"
+                "Value" = @(
+                    "S-1-5-32-544"  # Administrators SID
+                )
+            }
         }
     }
 }
+
 
 # CIS Control: 2.2.36. (L1) Ensure 'Replace a process level token' is set to 'LOCAL SERVICE, NETWORK SERVICE'
 # In simpler terms: This setting controls which system services are allowed to use a special way of getting access to resources. We want to limit this to specific, trusted services.
 # Recommended Value: LOCAL SERVICE, NETWORK SERVICE
 # Possible Values: A list of user or group names
-
 $cisControl_2_2_36 = @{
+    "ID" = "2.2.36"
+    "Description" = "Ensure 'Replace a process level token' is set to 'LOCAL SERVICE, NETWORK SERVICE'"
+    "SimpleTerms" = "This setting controls which system services are allowed to use a special way of getting access to resources. We want to limit this to specific, trusted services."
+    "RecommendedValue" = "LOCAL SERVICE, NETWORK SERVICE"
+    "PossibleValues" = "A list of user or group names"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Type" = "MultiString"
+            "Value" = @(
+                "S-1-5-19",  # LOCAL SERVICE
+                "S-1-5-20"   # NETWORK SERVICE
+            )
+        }
+    }
+}
+
+
+$cisControl_2_2_36ORG = @{
     "ID" = "2.2.36"
     "Description" = "Ensure 'Replace a process level token' is set to 'LOCAL SERVICE, NETWORK SERVICE'"
     "SimpleTerms" = "This setting controls which system services are allowed to use a special way of getting access to resources. We want to limit this to specific, trusted services."
@@ -1058,8 +1078,23 @@ $cisControl_2_2_36 = @{
 # In simpler terms: This setting controls who is allowed to collect detailed information about how the system is performing.
 # Recommended Value: Administrators, NT SERVICE\WdiServiceHost
 # Possible Values: (Complex - involves setting registry key permissions)
-
 $cisControl_2_2_35 = @{
+    "ID" = "2.2.35"
+    "Description" = "Ensure 'Profile system performance' is set to 'Administrators, NT SERVICE\WdiServiceHost'"
+    "SimpleTerms" = "This setting controls who is allowed to collect detailed information about how the system is performing."
+    "RecommendedValue" = "Administrators, NT SERVICE\WdiServiceHost"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Type" = "MultiString"
+            "Value" = @(
+                "S-1-5-32-544",  # Administrators
+                "S-1-5-80-0"     # NT SERVICE\WdiServiceHost
+            )
+        }
+    }
+}
+$cisControl_2_2_35ORG = @{
     "ID" = "2.2.35"
     "Description" = "Ensure 'Profile system performance' is set to 'Administrators, NT SERVICE\WdiServiceHost'"
     "SimpleTerms" = "This setting controls who is allowed to collect detailed information about how the system is performing."
@@ -1541,8 +1576,8 @@ $cisControls = @($cisControl_2_3_9_4,
                 $cisControl_2_2_6,
                 $cisControl_2_2_4,
                 $cisControl_2_2_39,
-                #$cisControl_2_2_36,
-                #$cisControl_2_2_35,
+                $cisControl_2_2_36,
+                $cisControl_2_2_35,
                 #$cisControl_2_2_34,
                 #$cisControl_2_2_33,
                 #$cisControl_2_2_32,
@@ -1622,31 +1657,37 @@ foreach ($cisControl in $cisControls) {
                 }
             }
 
-            # Om UserAuthentication eller andra direkta värden finns
-            if ($keyDetails.ContainsKey("UserAuthentication")) {
+            # Om MultiString-värde ska sättas
+            if ($keyDetails.ContainsKey("Value") -and $keyDetails.Type -eq "MultiString") {
+                $valueName = $keyDetails.Name  # MultiString har ett namn
+                $value = $keyDetails.Value
+
                 try {
-                    Set-ItemProperty -Path "Registry::$keyPath" -Name "UserAuthentication" -Value $keyDetails.UserAuthentication
-                    Write-Host "Set UserAuthentication to $($keyDetails.UserAuthentication) for $keyPath"
+                    Set-ItemProperty -Path "Registry::$keyPath" -Name $valueName -Value $value
+                    Write-Host "Successfully set multi-string value for $keyPath\$valueName" -ForegroundColor Green
                 } catch {
-                    Write-Host "Failed to set UserAuthentication: $_" -ForegroundColor Red
+                    Write-Host "Failed to set multi-string value for ${keyPath}\${valueName}: $_" -ForegroundColor Red
                 }
             }
 
-            # Om MultiString-värde ska sättas (t.ex. för 2.2.4)
-            if ($keyDetails.Type -eq "MultiString" -and $keyDetails.Value) {
+            # Om det är ett vanligt strängvärde som ska sättas
+            if ($keyDetails.ContainsKey("Value") -and $keyDetails.Type -eq "String") {
+                $valueName = $keyDetails.Name
+                $value = $keyDetails.Value
+
                 try {
-                    Set-ItemProperty -Path "Registry::$keyPath" -Name "" -Value $keyDetails.Value
-                    Write-Host "Successfully set multi-string SID list for $keyPath" -ForegroundColor Green
+                    Set-ItemProperty -Path "Registry::$keyPath" -Name $valueName -Value $value
+                    Write-Host "Successfully set string value for $keyPath\$valueName" -ForegroundColor Green
                 } catch {
-                    Write-Host "Failed to set multi-string value for ${keyPath}: $_" -ForegroundColor Red
+                    Write-Host "Failed to set string value for ${keyPath}\${valueName}: $_" -ForegroundColor Red
                 }
             }
+
+            # Om det är en annan typ som ska hanteras (t.ex. andra specialfall)
+            # Lägg till extra logik om det behövs för ytterligare typer av värden eller förändringar.
         }
-    }
-
-    if ($cisControl.Action) {
-        & $cisControl.Action
     }
 
     Write-Host "###################################################################################" -ForegroundColor Cyan
 }
+
