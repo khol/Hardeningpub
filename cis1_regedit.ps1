@@ -70,8 +70,13 @@ if (Get-Module -Name PSRegistry) {
     return # Avbryt skriptet om modulen inte ar tillgänglig
 }
 
-$SetRegistryKeysRunning = $false # Global flagga för att indikera om funktionen körs
 
+# Helper function to check if running as admin
+function Is-Admin {
+    return ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+}
+
+# Function to set registry keys
 function Set-RegistryKeys {
     param (
         [Parameter(Mandatory = $true)]
@@ -89,12 +94,6 @@ function Set-RegistryKeys {
         }
         return
     }
-
-    # Wait until the function is not running (avoid re-entrancy)
-    while ($SetRegistryKeysRunning) {
-        Start-Sleep -Milliseconds 100
-    }
-    $SetRegistryKeysRunning = $true
 
     foreach ($key in $table.Keys) {
         try {
@@ -125,7 +124,7 @@ function Set-RegistryKeys {
                 # Set the value only if it's different or doesn't exist
                 if ($currentValue -ne $value -or $currentValue -eq $null) {
                     try {
-                        Set-ItemProperty -Path $fullPath -Name $valueName -Value $value -PropertyType $type -Force -ErrorAction Stop
+                        New-ItemProperty -Path $fullPath -Name $valueName -Value $value -PropertyType $type -Force | Out-Null
                         Write-Host "  Set registry value '$valueName' in key '$fullPath' to '$value' (Type: $type)." -ForegroundColor Green
                     } catch {
                         Write-Error "  Failed to set registry value '$valueName' in key '$fullPath': $_"
@@ -139,8 +138,6 @@ function Set-RegistryKeys {
             Write-Error "  Failed to process key '$fullPath': $_"
         }
     }
-
-    $SetRegistryKeysRunning = $false
 }
 
 Write-Host "###################################################################################" 
