@@ -3,7 +3,7 @@ function Is-Admin {
     return ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 }
 
-# Function to set registry key permissions
+
 # Function to set registry key permissions
 function Set-RegistryKeyPermissions {
     param (
@@ -15,7 +15,7 @@ function Set-RegistryKeyPermissions {
 
     try {
         $acl = Get-Acl -Path $KeyPath
-        $acl.SetAccessRulesProtect($true, $true)  # Corrected line: Call as a method!
+        $acl.SetAccessRuleProtection($true, $false)  # Corrected line: Method name is SetAccessRuleProtection
         $acl.Access.Clear()
 
         foreach ($permission in $DesiredPermissions) {
