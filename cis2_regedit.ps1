@@ -557,6 +557,272 @@ $cisControl_2_3_10_8 = @{
     }
 }
 
+# CIS Control: 2.3.10.7. (L1) Ensure 'Network access: Remotely accessible registry paths' is configured
+# In simpler terms: This setting controls which parts of your computer's settings (the registry) can be accessed from other computers on the network.
+# Recommended Value: See RegistryChanges for allowed paths
+# Possible Values: A list of registry paths
+
+$cisControl_2_3_10_7 = @{
+    "ID" = "2.3.10.7"
+    "Description" = "Ensure 'Network access: Remotely accessible registry paths' is configured"
+    "SimpleTerms" = "This setting controls which parts of your computer's settings (the registry) can be accessed from other computers on the network."
+    "RecommendedValue" = "See RegistryChanges for allowed paths"
+    "PossibleValues" = "A list of registry paths"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
+            "AccessiblePaths" = @(
+                "System\CurrentControlSet\Control\Lsa\Secrets",
+                "System\CurrentControlSet\Control\SecurityProviders",
+                "System\CurrentControlSet\Control\Terminal Server",
+                "System\CurrentControlSet\Control\Terminal Server\WinStations",
+                "System\CurrentControlSet\Services\LanmanServer",
+                "System\CurrentControlSet\Services\LanmanWorkstation",
+                "System\CurrentControlSet\Services\Netlogon",
+                "System\CurrentControlSet\Services\RemoteAccess",
+                "System\CurrentControlSet\Services\Sam"
+            )
+        }
+    }
+}
+
+# CIS Control: 2.3.10.6. (L1) Ensure 'Network access: Named Pipes that can be accessed anonymously' is set to 'None'
+# In simpler terms: This setting controls which "Named Pipes" (a way for programs to talk to each other) can be accessed without someone logging in. We want to block this.
+# Recommended Value: None (empty list)
+# Possible Values: A list of Named Pipe names
+
+$cisControl_2_3_10_6 = @{
+    "ID" = "2.3.10.6"
+    "Description" = "Ensure 'Network access: Named Pipes that can be accessed anonymously' is set to 'None'"
+    "SimpleTerms" = "This setting controls which 'Named Pipes' (a way for programs to talk to each other) can be accessed without someone logging in. We want to block this."
+    "RecommendedValue" = "None (empty list)"
+    "PossibleValues" = "A list of Named Pipe names"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" = @{
+            "NullSessionPipes" = @() # Empty array for "None"
+        }
+    }
+}
+
+# CIS Control: 2.3.10.5. (L1) Ensure 'Network access: Let Everyone permissions apply to anonymous users' is set to 'Disabled'
+# In simpler terms: This setting controls whether network permissions given to the "Everyone" group also apply to people who haven't logged in. We want to prevent this.
+# Recommended Value: Disabled (value 0)
+# Possible Values: 0 (Disabled), 1 (Enabled)
+
+$cisControl_2_3_10_5 = @{
+    "ID" = "2.3.10.5"
+    "Description" = "Ensure 'Network access: Let Everyone permissions apply to anonymous users' is set to 'Disabled'"
+    "SimpleTerms" = "This setting controls whether network permissions given to the 'Everyone' group also apply to people who haven't logged in. We want to prevent this."
+    "RecommendedValue" = "Disabled (value 0)"
+    "PossibleValues" = "0 (Disabled), 1 (Enabled)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
+            "EveryoneIncludesAnonymous" = 0 # 0 = Disabled, 1 = Enabled
+        }
+    }
+}
+
+
+# CIS Control: 2.3.10.2. (L1) Ensure 'Network access: Do not allow anonymous enumeration of SAM accounts' is set to 'Enabled'
+# In simpler terms: This setting stops people from listing the names of user accounts on your computer without logging in.
+# Recommended Value: Enabled (value 1)
+# Possible Values: 0 (Disabled), 1 (Enabled)
+
+$cisControl_2_3_10_2 = @{
+    "ID" = "2.3.10.2"
+    "Description" = "Ensure 'Network access: Do not allow anonymous enumeration of SAM accounts' is set to 'Enabled'"
+    "SimpleTerms" = "This setting stops people from listing the names of user accounts on your computer without logging in."
+    "RecommendedValue" = "Enabled (value 1)"
+    "PossibleValues" = "0 (Disabled), 1 (Enabled)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
+            "RestrictAnonymousSAM" = 1 # 1 = Enabled, 0 = Disabled
+        }
+    }
+}
+
+# CIS Control: 2.3.10.12. (L1) Ensure 'Network access: Sharing and security model for local accounts' is set to 'Classic - local users authenticate as themselves'
+# In simpler terms: This setting controls how your computer handles security when people on the network try to access shared resources. "Classic" is the more secure option.
+# Recommended Value: Classic - local users authenticate as themselves (value 0)
+# Possible Values: 0 (Classic), 1 (Guest only)
+
+$cisControl_2_3_10_12 = @{
+    "ID" = "2.3.10.12"
+    "Description" = "Ensure 'Network access: Sharing and security model for local accounts' is set to 'Classic - local users authenticate as themselves'"
+    "SimpleTerms" = "This setting controls how your computer handles security when people on the network try to access shared resources. 'Classic' is the more secure option."
+    "RecommendedValue" = "Classic - local users authenticate as themselves (value 0)"
+    "PossibleValues" = "0 (Classic), 1 (Guest only)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
+            "ForceGuest" = 0 # 0 = Classic, 1 = Guest only
+        }
+    }
+}
+
+
+# CIS Control: 2.3.10.11. (L1) Ensure 'Network access: Shares that can be accessed anonymously' is set to 'None'
+# In simpler terms: This setting controls which shared folders on your computer can be accessed by people on the network without logging in. We want to block this.
+# Recommended Value: None (empty list)
+# Possible Values: A list of share names
+
+$cisControl_2_3_10_11 = @{
+    "ID" = "2.3.10.11"
+    "Description" = "Ensure 'Network access: Shares that can be accessed anonymously' is set to 'None'"
+    "SimpleTerms" = "This setting controls which shared folders on your computer can be accessed by people on the network without logging in. We want to block this."
+    "RecommendedValue" = "None (empty list)"
+    "PossibleValues" = "A list of share names"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" = @{
+            "NullSessionShares" = @() # Empty array for "None"
+        }
+    }
+}
+
+# CIS Control: 2.3.1.3. (L1) Ensure 'Accounts: Limit local account use of blank passwords to console logon only' is set to 'Enabled'
+# In simpler terms: This setting stops local accounts (accounts created on this computer) from logging in without a password over the network.
+# Recommended Value: Enabled (value 1)
+# Possible Values: 0 (Disabled), 1 (Enabled)
+
+$cisControl_2_3_1_3 = @{
+    "ID" = "2.3.1.3"
+    "Description" = "Ensure 'Accounts: Limit local account use of blank passwords to console logon only' is set to 'Enabled'"
+    "SimpleTerms" = "This setting stops local accounts (accounts created on this computer) from logging in without a password over the network."
+    "RecommendedValue" = "Enabled (value 1)"
+    "PossibleValues" = "0 (Disabled), 1 (Enabled)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
+            "LimitBlankPasswordUse" = 1 # 1 = Enabled, 0 = Disabled
+        }
+    }
+}
+
+# CIS Control: 2.3.1.2. (L1) Ensure 'Accounts: Guest account status' is set to 'Disabled'
+# In simpler terms: This setting turns off the "Guest" account, which is a special account that allows people to use the computer without logging in.
+# Recommended Value: Disabled (value 0)
+# Possible Values: 0 (Disabled), 1 (Enabled)
+
+$cisControl_2_3_1_2 = @{
+    "ID" = "2.3.1.2"
+    "Description" = "Ensure 'Accounts: Guest account status' is set to 'Disabled'"
+    "SimpleTerms" = "This setting turns off the 'Guest' account, which is a special account that allows people to use the computer without logging in."
+    "RecommendedValue" = "Disabled (value 0)"
+    "PossibleValues" = "0 (Disabled), 1 (Enabled)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
+            "GuestAccountStatus" = 0 # 0 = Disabled, 1 = Enabled
+        }
+    }
+}
+
+
+# CIS Control: 2.2.9. (L1) Ensure 'Change the time zone' is set to 'Administrators, LOCAL SERVICE, Users'
+# In simpler terms: This setting controls who is allowed to change the computer's time zone.
+# Recommended Value: Administrators, LOCAL SERVICE, Users
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_9 = @{
+    "ID" = "2.2.9"
+    "Description" = "Ensure 'Change the time zone' is set to 'Administrators, LOCAL SERVICE, Users'"
+    "SimpleTerms" = "This setting controls who is allowed to change the computer's time zone."
+    "RecommendedValue" = "Administrators, LOCAL SERVICE, Users"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "LOCAL SERVICE"; FileSystemRights = "Read"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "Users"; FileSystemRights = "Read"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+# CIS Control: 2.2.8. (L1) Ensure 'Change the system time' is set to 'Administrators, LOCAL SERVICE'
+# In simpler terms: This setting controls who is allowed to change the computer's time.
+# Recommended Value: Administrators, LOCAL SERVICE
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_8 = @{
+    "ID" = "2.2.8"
+    "Description" = "Ensure 'Change the system time' is set to 'Administrators, LOCAL SERVICE'"
+    "SimpleTerms" = "This setting controls who is allowed to change the computer's time."
+    "RecommendedValue" = "Administrators, LOCAL SERVICE"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "LOCAL SERVICE"; FileSystemRights = "Read"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+# CIS Control: 2.2.6. (L1) Ensure 'Allow log on through Remote Desktop Services' is set to 'Administrators, Remote Desktop Users'
+# In simpler terms: This setting controls who is allowed to connect to the computer using Remote Desktop.
+# Recommended Value: Administrators, Remote Desktop Users
+# Possible Values: (Complex - involves setting registry key permissions and a registry value)
+
+$cisControl_2_2_6 = @{
+    "ID" = "2.2.6"
+    "Description" = "Ensure 'Allow log on through Remote Desktop Services' is set to 'Administrators, Remote Desktop Users'"
+    "SimpleTerms" = "This setting controls who is allowed to connect to the computer using Remote Desktop."
+    "RecommendedValue" = "Administrators, Remote Desktop Users"
+    "PossibleValues" = "(Complex - involves setting registry key permissions and a registry value)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" = @{
+            "UserAuthentication" = 1 # 1 = Enabled (required authentication)
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "BUILTIN\Remote Desktop Users"; FileSystemRights = "ReadAndExecute"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.4. (L1) Ensure 'Adjust memory quotas for a process' is set to 'Administrators, LOCAL SERVICE, NETWORK SERVICE'
+# In simpler terms: This setting controls who is allowed to change how much memory a program can use.
+# Recommended Value: Administrators, LOCAL SERVICE, NETWORK SERVICE
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_4 = @{
+    "ID" = "2.2.4"
+    "Description" = "Ensure 'Adjust memory quotas for a process' is set to 'Administrators, LOCAL SERVICE, NETWORK SERVICE'"
+    "SimpleTerms" = "This setting controls who is allowed to change how much memory a program can use."
+    "RecommendedValue" = "Administrators, LOCAL SERVICE, NETWORK SERVICE"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "NT AUTHORITY\LOCAL SERVICE"; FileSystemRights = "Read"; InheritanceFlags = "None"; PropagationFlags = "None" },
+                @{ Identity = "NT AUTHORITY\NETWORK SERVICE"; FileSystemRights = "Read"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
+
+# CIS Control: 2.2.39. (L1) Ensure 'Take ownership of files or other objects' is set to 'Administrators'
+# In simpler terms: This setting controls who is allowed to become the owner of files and folders. We want to limit this to administrators.
+# Recommended Value: Administrators
+# Possible Values: (Complex - involves setting registry key permissions)
+
+$cisControl_2_2_39 = @{
+    "ID" = "2.2.39"
+    "Description" = "Ensure 'Take ownership of files or other objects' is set to 'Administrators'"
+    "SimpleTerms" = "This setting controls who is allowed to become the owner of files and folders. We want to limit this to administrators."
+    "RecommendedValue" = "Administrators"
+    "PossibleValues" = "(Complex - involves setting registry key permissions)"
+    "RegistryChanges" = @{
+        "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SePrivilegeAssignment" = @{
+            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+                @{ Identity = "BUILTIN\Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" }
+            )
+        }
+    }
+}
+
 
 # Process CIS controls
 $cisControls = @($cisControl_2_3_9_4, 
@@ -583,7 +849,20 @@ $cisControls = @($cisControl_2_3_9_4,
                 $cisControl_2_3_11_6,
                 $cisControl_2_3_11_5, 
                 $cisControl_2_3_10_9,
-                $cisControl_2_3_10_8
+                $cisControl_2_3_10_8,
+                $cisControl_2_3_10_7,
+                $cisControl_2_3_10_6,
+                $cisControl_2_3_10_5,
+                $cisControl_2_3_10_2,
+                $cisControl_2_3_10_12,
+                $cisControl_2_3_10_11,
+                $cisControl_2_3_1_3,
+                $cisControl_2_3_1_2,
+                $cisControl_2_2_9, 
+                $cisControl_2_2_8,
+                $cisControl_2_2_6,
+                $cisControl_2_2_4,
+                $cisControl_2_2_39
                )
 
 foreach ($cisControl in $cisControls) {
