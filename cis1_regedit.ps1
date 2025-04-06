@@ -1,3 +1,6 @@
+Set-ExecutionPolicy RemoteSigned
+
+
 # Helper function to check if running as admin (place at the beginning of your script)
 function Is-Admin {
     return ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
