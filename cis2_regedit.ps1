@@ -15,7 +15,7 @@ function Set-RegistryKeyPermissions {
     try {
         $acl = Get-Acl -Path $KeyPath
         $acl.SetAccessRuleProtection($true, $false)
-        $acl.Access.Clear()  # Corrected line: Call Clear() as a method
+        $acl.Access.Clear()  # Corrected: This is the correct method call
         foreach ($permission in $DesiredPermissions) {
             $identity = New-Object System.Security.Principal.NTAccount($permission.Identity)
             $accessRule = New-Object System.Security.AccessControl.RegistryAccessRule(
