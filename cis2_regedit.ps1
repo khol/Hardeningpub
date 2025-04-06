@@ -14,10 +14,7 @@ function Set-RegistryKeyPermissions {
 
     try {
         $acl = Get-Acl -Path $KeyPath
-        $acl.SetAccessRuleProtection($true, $false)
-        
-        # Remove existing rules by iterating
-        $acl.Access | ForEach-Object {$acl.RemoveAccessRule($_)}
+        $acl.SetAccessRuleProtection($true, $false)  # Prevent inheritance, discard existing
 
         foreach ($permission in $DesiredPermissions) {
             $identity = New-Object System.Security.Principal.NTAccount($permission.Identity)
@@ -28,7 +25,26 @@ function Set-RegistryKeyPermissions {
                 $permission.PropagationFlags,
                 "Allow"  # Or "Deny" if needed
             )
-            $acl.Access.AddAccessRule($accessRule)
+
+            # Check if the rule already exists
+            $ruleExists = $false
+            foreach ($existingRule in $acl.Access) {
+                if ($existingRule.IdentityReference -eq $identity -and
+                    $existingRule.FileSystemRights -eq $permission.FileSystemRights -and
+                    $existingRule.InheritanceFlags -eq $permission.InheritanceFlags -and
+                    $existingRule.PropagationFlags -eq $permission.PropagationFlags -and
+                    $existingRule.AccessControlType -eq "Allow") {
+                    $ruleExists = $true
+                    break
+                }
+            }
+
+            if (-not $ruleExists) {
+                $acl.Access.AddAccessRule($accessRule)
+                Write-Host "    Added permission: $($permission.Identity) - $($permission.FileSystemRights)" -ForegroundColor Yellow
+            } else {
+                Write-Host "    Permission already exists: $($permission.Identity) - $($permission.FileSystemRights)" -ForegroundColor DarkYellow
+            }
         }
 
         Set-Acl -Path $KeyPath -AclObject $acl
@@ -37,6 +53,7 @@ function Set-RegistryKeyPermissions {
         Write-Error "  Failed to set permissions for key '$KeyPath': $_"
     }
 }
+
 
 # Function to set registry keys
 function Set-RegistryKeys {
