@@ -11,7 +11,6 @@ $cis124Settings = @{
 
 # CIS Control: 1.2.3. (L1) Ensure 'Allow Administrator account lockout' is set to 'Enabled'
 # In simpler terms: This setting makes sure that even the main administrator account can be locked out if someone tries to guess the password too many times.
-
 # Define the security policy setting and desired value
 $policyName123 = "Administrator account lockout duration" # This policy determines if lockout is active
 $desiredValue123 = 30 # Any value other than 0 enables lockout. We'll use 30 minutes as a reasonable default.
@@ -20,6 +19,23 @@ $cis123Settings = @{
         "AdministratorAccountLockout" = $desiredValue123
     }
 }
+
+# CIS Control: 1.2.4. (L1) Ensure 'Reset account lockout counter after' is set to '15 or more minute(s)'
+# In simpler terms: This setting controls how long a user's account stays locked out after too many failed login attempts.
+# Define the CIS control information
+$cisControl = @{
+    "ID" = "1.2.4"
+    "Description" = "Ensure 'Reset account lockout counter after' is set to '15 or more minute(s)'"
+    "SimpleTerms" = "This setting controls how long a user's account stays locked out after too many failed login attempts."
+    "RegistryChanges" = @{
+        "HKLM\SECURITY\Policy\PolAdt" = @{
+            "LockoutResetMin" = 15 # Value in minutes
+        }
+    }
+}
+
+
+
 
 # Installera PSRegistry (om det inte redan är installerat)
 try {
@@ -136,3 +152,14 @@ Write-Host "####################################################################
 Set-RegistryKeys -Table $cis123Settings -RunAsAdmin
 Write-Host " CIS Control: 1.2.3. (L1) Ensure 'Allow Administrator account lockout' is set to 'Enabled'" -ForegroundColor Green
 Write-Host "###################################################################################" 
+# Apply CIS 1.2.4 settings
+Write-Host "###################################################################################" -ForegroundColor Cyan
+Write-Host "Processing CIS Control $($cisControl.ID): $($cisControl.Description)" -ForegroundColor Cyan
+Write-Host "  In simpler terms: $($cisControl.SimpleTerms)"
+
+if ($cisControl.RegistryChanges) {
+    Set-RegistryKeys -Table $cisControl.RegistryChanges -RunAsAdmin
+}
+
+Write-Host "###################################################################################" -ForegroundColor Cyan
+
