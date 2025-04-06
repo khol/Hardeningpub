@@ -15,8 +15,10 @@ function Set-RegistryKeyPermissions {
     try {
         $acl = Get-Acl -Path $KeyPath
         $acl.SetAccessRuleProtection($true, $false)
-        #$acl.Access.Clear()  # Corrected: This is the correct method call
-        $acl.Access.RemoveAll()  # Corrected: This is the correct method call
+        
+        # Remove existing rules by iterating
+        $acl.Access | ForEach-Object {$acl.RemoveAccessRule($_)}
+
         foreach ($permission in $DesiredPermissions) {
             $identity = New-Object System.Security.Principal.NTAccount($permission.Identity)
             $accessRule = New-Object System.Security.AccessControl.RegistryAccessRule(
