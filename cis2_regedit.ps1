@@ -3,7 +3,40 @@ function Is-Admin {
     return ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 }
 
-# Function to set registry key permissions
+# Hjälpfunktion för att konvertera strängar till RegistryRights
+function Convert-ToRegistryRights {
+    param (
+        [string]$permissionString
+    )
+
+    # Skapa en hashtable för att konvertera strängarna till RegistryRights
+    $permissionsMap = @{
+        "QueryValues"        = [System.Security.AccessControl.RegistryRights]::QueryValues
+        "SetValue"           = [System.Security.AccessControl.RegistryRights]::SetValue
+        "CreateSubKey"       = [System.Security.AccessControl.RegistryRights]::CreateSubKey
+        "EnumerateSubKeys"   = [System.Security.AccessControl.RegistryRights]::EnumerateSubKeys
+        "Notify"             = [System.Security.AccessControl.RegistryRights]::Notify
+        "CreateLink"         = [System.Security.AccessControl.RegistryRights]::CreateLink
+        "Delete"             = [System.Security.AccessControl.RegistryRights]::Delete
+        "ReadPermissions"    = [System.Security.AccessControl.RegistryRights]::ReadPermissions
+        "WriteKey"           = [System.Security.AccessControl.RegistryRights]::WriteKey
+        "ExecuteKey"         = [System.Security.AccessControl.RegistryRights]::ExecuteKey
+        "ReadKey"            = [System.Security.AccessControl.RegistryRights]::ReadKey
+        "ChangePermissions"  = [System.Security.AccessControl.RegistryRights]::ChangePermissions
+        "TakeOwnership"      = [System.Security.AccessControl.RegistryRights]::TakeOwnership
+        "FullControl"        = [System.Security.AccessControl.RegistryRights]::FullControl
+    }
+
+    # Returnera rättigheten som en enumerator
+    if ($permissionsMap.ContainsKey($permissionString)) {
+        return $permissionsMap[$permissionString]
+    } else {
+        Write-Error "Invalid permission string '$permissionString'."
+        return $null
+    }
+}
+
+# Funktion för att sätta registry key permissions
 function Set-RegistryKeyPermissions {
     param (
         [Parameter(Mandatory = $true)]
@@ -13,30 +46,41 @@ function Set-RegistryKeyPermissions {
     )
 
     try {
+        # Hämta ACL (Access Control List) för registernyckeln
         $acl = Get-Acl -Path $KeyPath
-        $acl.SetAccessRuleProtection($true, $false)
-        
-        # Remove existing rules by iterating
-        $acl.Access | ForEach-Object {$acl.RemoveAccessRule($_)}
+        $acl.SetAccessRuleProtection($true, $false)  # Skydda ACL från ärvda regler
 
+        # Rensa alla befintliga åtkomstregler
+        $acl.Access | ForEach-Object { $acl.RemoveAccessRule($_) }
+
+        # Lägg till de önskade behörigheterna s
         foreach ($permission in $DesiredPermissions) {
             $identity = New-Object System.Security.Principal.NTAccount($permission.Identity)
-            $accessRule = New-Object System.Security.AccessControl.RegistryAccessRule(
-                $identity,
-                $permission.FileSystemRights,
-                $permission.InheritanceFlags,
-                $permission.PropagationFlags,
-                "Allow"  # Or "Deny" if needed
-            )
-            $acl.Access.AddAccessRule($accessRule) # Corrected: Use AddAccessRule (Capital A)
+
+            # Konvertera permission till RegistryRights
+            $rights = Convert-ToRegistryRights -permissionString $permission.FileSystemRights
+            if ($rights) {
+                $accessRule = New-Object System.Security.AccessControl.RegistryAccessRule(
+                    $identity,
+                    $rights,
+                    $permission.InheritanceFlags,
+                    $permission.PropagationFlags,
+                    "Allow"
+                )
+
+                # Lägg till åtkomstregeln på ACL
+                $acl.AddAccessRule($accessRule)
+            }
         }
 
+        # Använd den uppdaterade ACL:n på registernyckeln
         Set-Acl -Path $KeyPath -AclObject $acl
         Write-Host "  Successfully set permissions for key '$KeyPath'" -ForegroundColor Green
     } catch {
         Write-Error "  Failed to set permissions for key '$KeyPath': $_"
     }
 }
+
 
 
 # Function to set registry keys
@@ -127,6 +171,75 @@ if (-not (Get-Module -Name PSRegistry -ListAvailable)) {
         return # Exit if PSRegistry fails
     }
 }
+
+
+function Get-SID {
+    param (
+        [string]$accountName
+    )
+    
+    try {
+        $account = New-Object System.Security.Principal.NTAccount($accountName)
+        $sid = $account.Translate([System.Security.Principal.SecurityIdentifier])
+        return $sid.Value
+    }
+    catch {
+        Write-Error "Failed to retrieve SID for ${accountName}: $_"
+    }
+}
+
+function Set-TimeZonePrivilege {
+    Write-Host "  Configuring SeTimeZonePrivilege using secedit..." -ForegroundColor Yellow
+
+    # Hämta SID för användarna och grupperna
+    $administratorsSID = Get-SID -accountName "Administrators"
+    $localServiceSID = Get-SID -accountName "LOCAL SERVICE"
+    $usersSID = Get-SID -accountName "Users"
+
+    # Kontrollera att vi har hämtat SID korrekt
+    if (-not $administratorsSID -or -not $localServiceSID -or -not $usersSID) {
+        Write-Error "One or more SIDs could not be retrieved. Aborting..."
+        return
+    }
+
+    # Skriv ut användare och SID
+    Write-Host "  SID for Administrators: $administratorsSID"
+    Write-Host "  SID for LOCAL SERVICE: $localServiceSID"
+    Write-Host "  SID for Users: $usersSID"
+
+    # Skapa INF-filen
+    $infPath = "$env:TEMP\cis2.2.9_timezone.inf"
+    $dbPath = "$env:TEMP\cis2.2.9_timezone.sdb"
+
+    @"
+[Unicode]
+Unicode=yes
+
+[Version]
+signature=`"$STOCKHOLM$`
+Revision=1
+
+[Privilege Rights]
+SeTimeZonePrivilege = $administratorsSID,$localServiceSID,$usersSID
+"@ | Set-Content -Encoding ASCII -Path $infPath
+
+    # Kör secedit
+    secedit /configure /db $dbPath /cfg $infPath /areas USER_RIGHTS /quiet
+
+    # Kontrollera om SDB-filen finns innan du tar bort den
+    if (Test-Path $dbPath) {
+        Remove-Item $dbPath -Force
+    }
+
+    # Ta bort INF-filen
+    Remove-Item $infPath -Force
+
+    Write-Host "  SeTimeZonePrivilege has been set successfully." -ForegroundColor Green
+}
+
+
+
+
 
 
 
@@ -758,8 +871,26 @@ $cisControl_2_3_1_2 = @{
 # In simpler terms: This setting controls who is allowed to change the computer's time zone.
 # Recommended Value: Administrators, LOCAL SERVICE, Users
 # Possible Values: (Complex - involves setting registry key permissions)
-
+# Lägg till i din CIS-kontroll-struktur
 $cisControl_2_2_9 = @{
+    "ID" = "2.2.9"
+    "Description" = "Ensure 'Change the time zone' is set to 'Administrators, LOCAL SERVICE, Users'"
+    "SimpleTerms" = "Control who is allowed to change the computer's time zone."
+    "RecommendedValue" = "Administrators, LOCAL SERVICE, Users"
+    "PossibleValues" = "User rights assignment: SeTimeZonePrivilege"
+    "Action" = { Write-Host "Processing CIS Control 2.2.9: Ensure 'Change the time zone' is set to 'Administrators, LOCAL SERVICE, Users'"
+                # Hämta SID för användarna och grupperna
+                $administratorsSID = Get-SID -accountName "Administrators"
+                $localServiceSID = Get-SID -accountName "LOCAL SERVICE"
+                $usersSID = Get-SID -accountName "Users"
+                # Skriv ut användare och SID
+                Write-Host "  SID for Administrators: $administratorsSID"
+                Write-Host "  SID for LOCAL SERVICE: $localServiceSID"
+                Write-Host "  SID for Users: $usersSID"
+                Set-TimeZonePrivilege 
+                }  # <-- viktig del
+}
+$cisControl_2_2_9ORG = @{
     "ID" = "2.2.9"
     "Description" = "Ensure 'Change the time zone' is set to 'Administrators, LOCAL SERVICE, Users'"
     "SimpleTerms" = "This setting controls who is allowed to change the computer's time zone."
@@ -780,7 +911,6 @@ $cisControl_2_2_9 = @{
 # In simpler terms: This setting controls who is allowed to change the computer's time.
 # Recommended Value: Administrators, LOCAL SERVICE
 # Possible Values: (Complex - involves setting registry key permissions)
-
 $cisControl_2_2_8 = @{
     "ID" = "2.2.8"
     "Description" = "Ensure 'Change the system time' is set to 'Administrators, LOCAL SERVICE'"
@@ -789,9 +919,9 @@ $cisControl_2_2_8 = @{
     "PossibleValues" = "(Complex - involves setting registry key permissions)"
     "RegistryChanges" = @{
         "HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation" = @{
-            "Permissions" = @( # This is a placeholder - setting permissions is complex!
+            "Permissions" = @( # Detta är ett exempel på behörigheter
                 @{ Identity = "Administrators"; FileSystemRights = "FullControl"; InheritanceFlags = "None"; PropagationFlags = "None" },
-                @{ Identity = "LOCAL SERVICE"; FileSystemRights = "Read"; InheritanceFlags = "None"; PropagationFlags = "None" }
+                @{ Identity = "LOCAL SERVICE"; FileSystemRights = "ReadKey"; InheritanceFlags = "None"; PropagationFlags = "None" }
             )
         }
     }
@@ -1402,8 +1532,25 @@ foreach ($cisControl in $cisControls) {
     Write-Host "  Recommended Value: $($cisControl.RecommendedValue)"
     Write-Host "  Possible Values: $($cisControl.PossibleValues)"
 
+    # Hämta SID för användarna/grupper om det behövs
     if ($cisControl.RegistryChanges) {
+        # Exempel på SID-utskrift om registry changes är definierade
+        foreach ($registryChange in $cisControl.RegistryChanges.GetEnumerator()) {
+            Write-Host "Registry Change for $($registryChange.Key):"
+            
+            # Här hämtar vi SID för de grupper som definieras i "Permissions"
+            foreach ($permission in $registryChange.Value.Permissions) {
+                $sid = Get-SID -accountName $permission.Identity
+                Write-Host "  SID for $($permission.Identity): $sid"
+            }
+        }
+
         Set-RegistryKeys -Table $cisControl.RegistryChanges -RunAsAdmin
+    }
+
+    if ($cisControl.Action) {
+        # Kör funktionen som är lagrad
+        & $cisControl.Action
     }
 
     Write-Host "###################################################################################" -ForegroundColor Cyan
