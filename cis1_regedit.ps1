@@ -37,40 +37,6 @@ $cisControl = @{
 
 
 
-# Installera PSRegistry (om det inte redan är installerat)
-try {
-    Get-Module -Name PSRegistry -ListAvailable -ErrorAction Stop | Out-Null
-    Write-Host "PSRegistry är redan installerat." -ForegroundColor Green
-} catch {
-    Write-Host "Installerar PSRegistry..." -ForegroundColor Yellow
-    try {
-        Install-Module PSRegistry -Scope CurrentUser -Force -ErrorAction Stop
-        Write-Host "PSRegistry installerat." -ForegroundColor Green
-    } catch {
-        Write-Error "Misslyckades med att installera PSRegistry: $_"
-        return # Avbryt skriptet om installationen misslyckas
-    }
-}
-
-# Importera PSRegistry
-try {
-    Install-Module -Name PSRegistry
-    Import-Module PSRegistry -ErrorAction Stop
-    Write-Host "PSRegistry importerat." -ForegroundColor Green
-} catch {
-    Write-Error "Misslyckades med att importera PSRegistry: $_"
-    return # Avbryt skriptet om importen misslyckas
-}
-
-# Kontrollera att modulen ar tillganglig
-if (Get-Module -Name PSRegistry) {
-    Write-Host "PSRegistry-modulen är tillgänglig." -ForegroundColor Green
-} else {
-    Write-Error "PSRegistry-modulen är inte tillgänglig efter import."
-    return # Avbryt skriptet om modulen inte ar tillgänglig
-}
-
-
 # Helper function to check if running as admin
 function Is-Admin {
     return ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
@@ -80,8 +46,7 @@ function Is-Admin {
 function Set-RegistryKeys {
     param (
         [Parameter(Mandatory = $true)]
-        [hashtable]$table,
-        [switch]$RunAsAdmin
+        [hashtable]$table
     )
 
     # Check if running as admin
@@ -137,6 +102,27 @@ function Set-RegistryKeys {
         catch {
             Write-Error "  Failed to process key '$fullPath': $_"
         }
+    }
+}
+
+# Install and import PSRegistry (only if needed)
+if (-not (Get-Module -Name PSRegistry -ListAvailable)) {
+    try {
+        Write-Host "Installing PSRegistry..." -ForegroundColor Yellow
+        Install-Module PSRegistry -Scope CurrentUser -Force -ErrorAction Stop
+        Import-Module PSRegistry -ErrorAction Stop
+        Write-Host "PSRegistry installed and imported." -ForegroundColor Green
+    } catch {
+        Write-Error "Failed to install/import PSRegistry: $_"
+        return # Exit if PSRegistry fails
+    }
+} else {
+    try {
+        Import-Module PSRegistry -ErrorAction Stop
+        Write-Host "PSRegistry module is available." -ForegroundColor Green
+    } catch {
+        Write-Error "Failed to import PSRegistry: $_"
+        return # Exit if PSRegistry fails
     }
 }
 
