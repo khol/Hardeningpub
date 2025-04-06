@@ -28,7 +28,7 @@ function Set-RegistryKeyPermissions {
                 $permission.PropagationFlags,
                 "Allow"  # Or "Deny" if needed
             )
-            $acl.Access.Add($accessRule)
+            $acl.Access.AddAccessRule($accessRule)
         }
 
         Set-Acl -Path $KeyPath -AclObject $acl
