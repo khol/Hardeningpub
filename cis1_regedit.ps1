@@ -1,3 +1,71 @@
+# Helper function to check if running as admin (place at the beginning of your script)
+function Is-Admin {
+    return ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+}
+
+# Function to set registry keys
+function Set-RegistryKeys {
+    param (
+        [Parameter(Mandatory = $true)]
+        [hashtable]$table,
+        [switch]$RunAsAdmin
+    )
+
+    # Check if running as admin
+    if (-not (Is-Admin)) {
+        if ($MyInvocation.MyCommand.Path) {
+            Start-Process -FilePath "powershell.exe" -ArgumentList "-ExecutionPolicy Bypass -File `"$($MyInvocation.MyCommand.Path)`"" -Verb RunAs -Wait
+        } else {
+            Write-Warning "Script path not available. Cannot elevate."
+            return
+        }
+        return
+    }
+
+    foreach ($key in $table.Keys) {
+        try {
+            # Convert HKLM to full path
+            $fullPath = $key -replace '^HKLM\\', 'HKLM:\\'
+
+            # Ensure the key exists
+            if (!(Test-Path $fullPath)) {
+                New-Item -Path $fullPath -ItemType Directory -Force | Out-Null
+            }
+
+            $values = $table[$key]
+            foreach ($valueName in $values.Keys) {
+                $value = $values[$valueName]
+                $type = if ($value -is [int]) { "DWord" } else { "String" }
+
+                # Get existing value with better error handling and type check
+                try {
+                    $item = Get-ItemProperty -Path $fullPath -Name $valueName -ErrorAction Stop
+                    $currentValue = $item.$valueName
+                    $currentType = $item.PSObject.Properties[$valueName].TypeNameOfValue
+                    Write-Host "  Existing value for '$valueName' in key '$fullPath' is: '$currentValue' (Type: $currentType)" -ForegroundColor Yellow
+                } catch {
+                    Write-Host "  Value '$valueName' does not exist in key '$fullPath'" -ForegroundColor DarkYellow
+                    $currentValue = $null
+                }
+
+                # Set the value only if it's different or doesn't exist
+                if ($currentValue -ne $value -or $currentValue -eq $null) {
+                    try {
+                        New-ItemProperty -Path $fullPath -Name $valueName -Value $value -PropertyType $type -Force | Out-Null
+                        Write-Host "  Set registry value '$valueName' in key '$fullPath' to '$value' (Type: $type)." -ForegroundColor Green
+                    } catch {
+                        Write-Error "  Failed to set registry value '$valueName' in key '$fullPath': $_"
+                    }
+                } else {
+                    Write-Host "  Value '$valueName' in key '$fullPath' is already set to '$value'." -ForegroundColor Green
+                }
+            }
+        }
+        catch {
+            Write-Error "  Failed to process key '$fullPath': $_"
+        }
+    }
+}
 
 # Install and import PSRegistry (only if needed)
 if (-not (Get-Module -Name PSRegistry -ListAvailable)) {
@@ -7,104 +75,29 @@ if (-not (Get-Module -Name PSRegistry -ListAvailable)) {
         Import-Module PSRegistry -ErrorAction Stop
         Write-Host "PSRegistry installed and imported." -ForegroundColor Green
     } catch {
-        Write-Error "Misslyckades med att installera PSRegistry: $_"
-        return # Avbryt skriptet om installationen misslyckas
+        Write-Error "Failed to install/import PSRegistry: $_"
+        return # Exit if PSRegistry fails
     }
 } else {
     try {
         Import-Module PSRegistry -ErrorAction Stop
-        Write-Host "PSRegistry-modulen är tillgänglig." -ForegroundColor Green
+        Write-Host "PSRegistry module is available." -ForegroundColor Green
     } catch {
-        Write-Error "Misslyckades med att importera PSRegistry: $_"
-        return # Avbryt skriptet om modulen inte ar tillganglig
+        Write-Error "Failed to import PSRegistry: $_"
+        return # Exit if PSRegistry fails
     }
 }
-
-
-function Set-RegistryKeys {
-    param (
-        [Parameter(Mandatory=$true)]
-        [hashtable]$table,
-        [switch]$RunAsAdmin  # <-- This is how the parameter is defined!
-    )
-    foreach ($key in $table.Keys) {
-        try {
-            # Convert HKLM to full path
-            $fullPath = $key -replace '^HKLM\\', 'HKLM:\\'
-            
-            if (!(Test-Path $fullPath)) {
-                New-Item -Path $fullPath -Force | Out-Null
-            }
-            $values = $table[$key]
-            foreach ($valueName in $values.Keys) {
-                $value = $values[$valueName]
-                $type = if ($value -is [int]) { "DWord" } else { "String" }
-                
-                # Use New-ItemProperty instead of Set-ItemProperty
-                if (Get-ItemProperty -Path $fullPath -Name $valueName -ErrorAction SilentlyContinue) {
-                    Set-ItemProperty -Path $fullPath -Name $valueName -Value $value
-                } else {
-                    New-ItemProperty -Path $fullPath -Name $valueName -Value $value -PropertyType $type -Force | Out-Null
-                }
-            }
-        }
-        catch {
-            Write-Error "Failed to process key '$fullPath': $_"
-        }
-    }
-}
-function Set-UserRegistryKeys {
-    param (
-        [Parameter(Mandatory=$true)]
-        [hashtable]$Table,
-        [switch]$RunAsAdmin  # <-- This is how the parameter is defined!
-    )
-
-    # Get all user SIDs from HKEY_USERS except system SIDs
-    $userSIDs = Get-ChildItem -Path "Registry::HKEY_USERS" | Where-Object {
-        $_.PSChildName -notmatch '^(S-1-5-18|S-1-5-19|S-1-5-20|\.DEFAULT)$'
-    }
-
-    foreach ($sid in $userSIDs) {
-        foreach ($key in $Table.Keys) {
-            # Replace the placeholder [USER SID] with the actual user SID
-            $userKey = $key -replace '\[USER SID\]', $sid.PSChildName
-            $userKey = "Registry::$userKey"  # Ensure we're using the Registry provider
-
-            if (!(Test-Path $userKey)) {
-                try {
-                    New-Item -Path $userKey -Force | Out-Null
-                }
-                catch {
-                    Write-Error "Failed to create registry key '$userKey': $_"
-                    continue
-                }
-            }
-
-            $values = $Table[$key]
-            foreach ($valueName in $values.Keys) {
-                $value = $values[$valueName]
-                try {
-                    $type = if ($value -is [int]) { "DWord" } else { "String" }
-                    Set-ItemProperty -Path $userKey -Name $valueName -Value $value -Type $type
-                }
-                catch {
-                    Write-Error "Failed to set value '$valueName' in key '$userKey': $_"
-                }
-            }
-        }
-    }
-}
-
 
 # CIS Control: 1.2.4. (L1) Ensure 'Reset account lockout counter after' is set to '15 or more minute(s)'
 # In simpler terms: This setting controls how long a user's account stays locked out after too many failed login attempts.
-# Recommended Value: 15 or more minutes
+# Recommended Value: 15 minutes
 # Possible Values: Any integer greater than 0
 $cisControl_1_2_4 = @{
     "ID" = "1.2.4"
     "Description" = "Ensure 'Reset account lockout counter after' is set to '15 or more minute(s)'"
     "SimpleTerms" = "This setting controls how long a user's account stays locked out after too many failed login attempts."
+    "RecommendedValue" = "15 minutes"
+    "PossibleValues" = "Any integer greater than 0"
     "RegistryChanges" = @{
         "HKLM\SECURITY\Policy\PolAdt" = @{
             "LockoutResetMin" = 15 # Value in minutes
@@ -114,12 +107,14 @@ $cisControl_1_2_4 = @{
 
 # CIS Control: 1.2.3. (L1) Ensure 'Allow Administrator account lockout' is set to 'Enabled'
 # In simpler terms: This setting makes sure that even the main administrator account can be locked out if someone tries to guess the password too many times.
-# Recommended Value: Any integer greater than 0 (e.g., 30 minutes)
-# Possible Values: Any integer (0 disables lockout)
+# Recommended Value: 30 minutes
+# Possible Values: Any positive integer (0 disables)
 $cisControl_1_2_3 = @{
     "ID" = "1.2.3"
     "Description" = "Ensure 'Allow Administrator account lockout' is set to 'Enabled'"
     "SimpleTerms" = "This setting makes sure that even the main administrator account can be locked out if someone tries to guess the password too many times."
+    "RecommendedValue" = "30 minutes"
+    "PossibleValues" = "Any positive integer (0 disables)"
     "RegistryChanges" = @{
         "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" = @{
             "AdministratorAccountLockout" = 30 # Value in minutes (0 disables)
@@ -128,7 +123,9 @@ $cisControl_1_2_3 = @{
 }
 
 # Process CIS controls
-foreach ($cisControl in @($cisControl_1_2_4, $cisControl_1_2_3)) {
+$cisControls = @($cisControl_1_2_4, $cisControl_1_2_3)
+
+foreach ($cisControl in $cisControls) {
     Write-Host "###################################################################################" -ForegroundColor Cyan
     Write-Host "Processing CIS Control $($cisControl.ID): $($cisControl.Description)" -ForegroundColor Cyan
     Write-Host "  In simpler terms: $($cisControl.SimpleTerms)"
