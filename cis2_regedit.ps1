@@ -1574,7 +1574,7 @@ $cisControls = @($cisControl_2_3_9_4,
                 $cisControl_2_3_1_2,
                 $cisControl_2_2_9, 
                 $cisControl_2_2_8,
-                $cisControl_2_2_6,
+                #$cisControl_2_2_6, #RDP access
                 $cisControl_2_2_4,
                 $cisControl_2_2_39,
                 $cisControl_2_2_36,
