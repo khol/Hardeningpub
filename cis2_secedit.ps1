@@ -8,9 +8,9 @@
 # Possible Values: List of group SIDs that should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll
-Copy-Item "C:\Windows\Security\Database\secedit.sdb" "C:\Users\test\secedit_backup.sdb"
+Copy-Item "C:\Windows\Security\Database\secedit.sdb" Join-Path -Path $env:USERPROFILE -ChildPath "secedit_backup.sdb"
 
-$infPath = "C:\Users\test\cis_2_2_9_timezone.inf"
+$infPath = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_9_timezone.inf"
 $infContent = @"
 [Unicode]
 Unicode=yes
@@ -29,7 +29,7 @@ Write-Host "INF path is: $infPath"
 Get-Content $infPath
 
 # Loggfil (skrivs till user profile path)
-$seceditLogPath = "C:\Users\test\cis_2_2_9_timezone.log"
+$seceditLogPath = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_9_timezone.log"
 
 # Använd den centrala SDB-filen
 $seceditDBPath = "C:\Windows\Security\Database\secedit.sdb"
@@ -69,7 +69,7 @@ Start-Sleep -Seconds 2
 # Possible Values: List of group SIDs that should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.8
-$infPath_228 = "C:\Users\test\cis_2_2_8_systime.inf"
+$infPath_228 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_8_systime.inf"
 $infContent_228 = @"
 [Unicode]
 Unicode=yes
@@ -87,8 +87,8 @@ Set-Content -Path $infPath_228 -Value $infContent_228 -Encoding UTF8
 Write-Host "CIS 2.2.8 INF file created: $infPath_228"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_228 = "C:\Users\test\cis_2_2_8_systime.log"
-#$seceditDBPath_228 = "C:\Users\test\cis_2_2_8_systime.sdb"
+$seceditLogPath_228 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_8_systime.log"
+#$seceditDBPath_228 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_8_systime.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_228 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -147,7 +147,7 @@ Start-Sleep -Seconds 2
 # Possible Values: List of group SIDs that should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.6
-$infPath_226 = "C:\Users\test\cis_2_2_6_rdp.inf"
+$infPath_226 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_6_rdp.inf"
 $infContent_226 = @"
 [Unicode]
 Unicode=yes
@@ -165,7 +165,7 @@ Set-Content -Path $infPath_226 -Value $infContent_226 -Encoding UTF8
 Write-Host "CIS 2.2.6 INF file created: $infPath_226"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_226 = "C:\Users\test\cis_2_2_6_rdp.log"
+$seceditLogPath_226 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_6_rdp.log"
 $seceditDBPath = "C:\Windows\Security\Database\secedit.sdb"
 
 # Ta bort befintliga filer om de finns för att undvika konflikter
@@ -227,7 +227,7 @@ Start-Sleep -Seconds 2
 # Possible Values: List of group SIDs that should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.4
-$infPath_224 = "C:\Users\test\cis_2_2_4_memoryquota.inf"
+$infPath_224 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_4_memoryquota.inf"
 $infContent_224 = @"
 [Unicode]
 Unicode=yes
@@ -245,8 +245,8 @@ Set-Content -Path $infPath_224 -Value $infContent_224 -Encoding UTF8
 Write-Host "CIS 2.2.4 INF file created: $infPath_224"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_224 = "C:\Users\test\cis_2_2_4_memoryquota.log"
-#$seceditDBPath_224 = "C:\Users\test\cis_2_2_4_memoryquota.sdb"
+$seceditLogPath_224 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_4_memoryquota.log"
+#$seceditDBPath_224 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_4_memoryquota.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_224 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -306,7 +306,7 @@ Start-Sleep -Seconds 2
 # Possible Values: List of group SIDs that should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.39
-$infPath_239 = "C:\Users\test\cis_2_2_39_takeownership.inf"
+$infPath_239 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_39_takeownership.inf"
 $infContent_239 = @"
 [Unicode]
 Unicode=yes
@@ -324,8 +324,8 @@ Set-Content -Path $infPath_239 -Value $infContent_239 -Encoding UTF8
 Write-Host "CIS 2.2.39 INF file created: $infPath_239"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_239 = "C:\Users\test\cis_2_2_39_takeownership.log"
-#$seceditDBPath_239 = "C:\Users\test\cis_2_2_39_takeownership.sdb"
+$seceditLogPath_239 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_39_takeownership.log"
+#$seceditDBPath_239 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_39_takeownership.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_239 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -384,7 +384,7 @@ Start-Sleep -Seconds 2
 # Possible Values: List of group SIDs that should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.36
-$infPath_236 = "C:\Users\test\cis_2_2_36_replaceprocesstoken.inf"
+$infPath_236 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_36_replaceprocesstoken.inf"
 $infContent_236 = @"
 [Unicode]
 Unicode=yes
@@ -402,8 +402,8 @@ Set-Content -Path $infPath_236 -Value $infContent_236 -Encoding UTF8
 Write-Host "CIS 2.2.36 INF file created: $infPath_236"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_236 = "C:\Users\test\cis_2_2_36_replaceprocesstoken.log"
-#$seceditDBPath_236 = "C:\Users\test\cis_2_2_36_replaceprocesstoken.sdb"
+$seceditLogPath_236 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_36_replaceprocesstoken.log"
+#$seceditDBPath_236 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_36_replaceprocesstoken.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_236 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -462,7 +462,7 @@ Start-Sleep -Seconds 2
 # Possible Values: List of group SIDs that should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.35
-$infPath_235 = "C:\Users\test\cis_2_2_35_profilesystemperformance.inf"
+$infPath_235 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_35_profilesystemperformance.inf"
 $infContent_235 = @"
 [Unicode]
 Unicode=yes
@@ -480,8 +480,8 @@ Set-Content -Path $infPath_235 -Value $infContent_235 -Encoding UTF8
 Write-Host "CIS 2.2.35 INF file created: $infPath_235"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_235 = "C:\Users\test\cis_2_2_35_profilesystemperformance.log"
-#$seceditDBPath_235 = "C:\Users\test\cis_2_2_35_profilesystemperformance.sdb"
+$seceditLogPath_235 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_35_profilesystemperformance.log"
+#$seceditDBPath_235 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_35_profilesystemperformance.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_235 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -542,7 +542,7 @@ Start-Sleep -Seconds 2
 # Possible Values: List of group SIDs that should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.34
-$infPath_234 = "C:\Users\test\cis_2_2_34_profileprocess.inf"
+$infPath_234 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_34_profileprocess.inf"
 $infContent_234 = @"
 [Unicode]
 Unicode=yes
@@ -560,8 +560,8 @@ Set-Content -Path $infPath_234 -Value $infContent_234 -Encoding UTF8
 Write-Host "CIS 2.2.34 INF file created: $infPath_234"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_234 = "C:\Users\test\cis_2_2_34_profileprocess.log"
-#$seceditDBPath_234 = "C:\Users\test\cis_2_2_34_profileprocess.sdb"
+$seceditLogPath_234 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_34_profileprocess.log"
+#$seceditDBPath_234 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_34_profileprocess.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_234 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -621,7 +621,7 @@ Start-Sleep -Seconds 2
 # Possible Values: List of group SIDs that should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.33
-$infPath_233 = "C:\Users\test\cis_2_2_33_volumemaintenance.inf"
+$infPath_233 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_33_volumemaintenance.inf"
 $infContent_233 = @"
 [Unicode]
 Unicode=yes
@@ -639,8 +639,8 @@ Set-Content -Path $infPath_233 -Value $infContent_233 -Encoding UTF8
 Write-Host "CIS 2.2.33 INF file created: $infPath_233"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_233 = "C:\Users\test\cis_2_2_33_volumemaintenance.log"
-#$seceditDBPath_233 = "C:\Users\test\cis_2_2_33_volumemaintenance.sdb"
+$seceditLogPath_233 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_33_volumemaintenance.log"
+#$seceditDBPath_233 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_33_volumemaintenance.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_233 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -700,7 +700,7 @@ Start-Sleep -Seconds 2
 # Possible Values: List of group SIDs that should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.32
-$infPath_232 = "C:\Users\test\cis_2_2_32_firmware.inf"
+$infPath_232 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_32_firmware.inf"
 $infContent_232 = @"
 [Unicode]
 Unicode=yes
@@ -718,8 +718,8 @@ Set-Content -Path $infPath_232 -Value $infContent_232 -Encoding UTF8
 Write-Host "CIS 2.2.32 INF file created: $infPath_232"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_232 = "C:\Users\test\cis_2_2_32_firmware.log"
-#$seceditDBPath_232 = "C:\Users\test\cis_2_2_32_firmware.sdb"
+$seceditLogPath_232 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_32_firmware.log"
+#$seceditDBPath_232 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_32_firmware.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_232 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -779,7 +779,7 @@ Start-Sleep -Seconds 2
 # Possible Values: No one should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.31
-$infPath_231 = "C:\Users\test\cis_2_2_31_label.inf"
+$infPath_231 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_31_label.inf"
 $infContent_231 = @"
 [Unicode]
 Unicode=yes
@@ -797,8 +797,8 @@ Set-Content -Path $infPath_231 -Value $infContent_231 -Encoding UTF8
 Write-Host "CIS 2.2.31 INF file created: $infPath_231"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_231 = "C:\Users\test\cis_2_2_31_label.log"
-#$seceditDBPath_231 = "C:\Users\test\cis_2_2_31_label.sdb"
+$seceditLogPath_231 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_31_label.log"
+#$seceditDBPath_231 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_31_label.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_231 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -858,7 +858,7 @@ Start-Sleep -Seconds 2
 # Possible Values: Only Administrators should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.30
-$infPath_230 = "C:\Users\test\cis_2_2_30_auditlog.inf"
+$infPath_230 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_30_auditlog.inf"
 $infContent_230 = @"
 [Unicode]
 Unicode=yes
@@ -876,8 +876,8 @@ Set-Content -Path $infPath_230 -Value $infContent_230 -Encoding UTF8
 Write-Host "CIS 2.2.30 INF file created: $infPath_230"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_230 = "C:\Users\test\cis_2_2_30_auditlog.log"
-#$seceditDBPath_230 = "C:\Users\test\cis_2_2_30_auditlog.sdb"
+$seceditLogPath_230 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_30_auditlog.log"
+#$seceditDBPath_230 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_30_auditlog.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_230 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -937,7 +937,7 @@ Start-Sleep -Seconds 2
 # Possible Values: No one should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.3
-$infPath_203 = "C:\Users\test\cis_2_2_3_operating_system.inf"
+$infPath_203 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_3_operating_system.inf"
 $infContent_203 = @"
 [Unicode]
 Unicode=yes
@@ -955,8 +955,8 @@ Set-Content -Path $infPath_203 -Value $infContent_203 -Encoding UTF8
 Write-Host "CIS 2.2.3 INF file created: $infPath_203"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_203 = "C:\Users\test\cis_2_2_3_operating_system.log"
-#$seceditDBPath_203 = "C:\Users\test\cis_2_2_3_operating_system.sdb"
+$seceditLogPath_203 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_3_operating_system.log"
+#$seceditDBPath_203 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_3_operating_system.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_203 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -1016,7 +1016,7 @@ Start-Sleep -Seconds 2
 # Possible Values: No one should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.27
-$infPath_227 = "C:\Users\test\cis_2_2_27_lock_memory.inf"
+$infPath_227 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_27_lock_memory.inf"
 $infContent_227 = @"
 [Unicode]
 Unicode=yes
@@ -1034,8 +1034,8 @@ Set-Content -Path $infPath_227 -Value $infContent_227 -Encoding UTF8
 Write-Host "CIS 2.2.27 INF file created: $infPath_227"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_227 = "C:\Users\test\cis_2_2_27_lock_memory.log"
-#$seceditDBPath_227 = "C:\Users\test\cis_2_2_27_lock_memory.sdb"
+$seceditLogPath_227 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_27_lock_memory.log"
+#$seceditDBPath_227 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_27_lock_memory.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_227 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -1096,7 +1096,7 @@ Start-Sleep -Seconds 2
 # Possible Values: Only Administrators should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.26
-$infPath_226 = "C:\Users\test\cis_2_2_26_load_unload_driver.inf"
+$infPath_226 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_26_load_unload_driver.inf"
 $infContent_226 = @"
 [Unicode]
 Unicode=yes
@@ -1114,8 +1114,8 @@ Set-Content -Path $infPath_226 -Value $infContent_226 -Encoding UTF8
 Write-Host "CIS 2.2.26 INF file created: $infPath_226"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_226 = "C:\Users\test\cis_2_2_26_load_unload_driver.log"
-#$seceditDBPath_226 = "C:\Users\test\cis_2_2_26_load_unload_driver.sdb"
+$seceditLogPath_226 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_26_load_unload_driver.log"
+#$seceditDBPath_226 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_26_load_unload_driver.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_226 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -1175,7 +1175,7 @@ Start-Sleep -Seconds 2
 # Possible Values: Administrators, LOCAL SERVICE, NETWORK SERVICE, SERVICE
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.24
-$infPath_224 = "C:\Users\test\cis_2_2_24_impersonate.inf"
+$infPath_224 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_24_impersonate.inf"
 $infContent_224 = @"
 [Unicode]
 Unicode=yes
@@ -1193,8 +1193,8 @@ Set-Content -Path $infPath_224 -Value $infContent_224 -Encoding UTF8
 Write-Host "CIS 2.2.24 INF file created: $infPath_224"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_224 = "C:\Users\test\cis_2_2_24_impersonate.log"
-#$seceditDBPath_224 = "C:\Users\test\cis_2_2_24_impersonate.sdb"
+$seceditLogPath_224 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_24_impersonate.log"
+#$seceditDBPath_224 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_24_impersonate.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_224 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -1254,7 +1254,7 @@ Start-Sleep -Seconds 2
 # Possible Values: LOCAL SERVICE, NETWORK SERVICE
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.23
-$infPath_223 = "C:\Users\test\cis_2_2_23_security_audit.inf"
+$infPath_223 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_23_security_audit.inf"
 $infContent_223 = @"
 [Unicode]
 Unicode=yes
@@ -1272,8 +1272,8 @@ Set-Content -Path $infPath_223 -Value $infContent_223 -Encoding UTF8
 Write-Host "CIS 2.2.23 INF file created: $infPath_223"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_223 = "C:\Users\test\cis_2_2_23_security_audit.log"
-#$seceditDBPath_223 = "C:\Users\test\cis_2_2_23_security_audit.sdb"
+$seceditLogPath_223 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_23_security_audit.log"
+#$seceditDBPath_223 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_23_security_audit.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_223 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -1334,7 +1334,7 @@ Start-Sleep -Seconds 2
 # Possible Values: Administrators
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.22
-$infPath_222 = "C:\Users\test\cis_2_2_22_shutdown.inf"
+$infPath_222 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_22_shutdown.inf"
 $infContent_222 = @"
 [Unicode]
 Unicode=yes
@@ -1352,8 +1352,8 @@ Set-Content -Path $infPath_222 -Value $infContent_222 -Encoding UTF8
 Write-Host "CIS 2.2.22 INF file created: $infPath_222"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_222 = "C:\Users\test\cis_2_2_22_shutdown.log"
-#$seceditDBPath_222 = "C:\Users\test\cis_2_2_22_shutdown.sdb"
+$seceditLogPath_222 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_22_shutdown.log"
+#$seceditDBPath_222 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_22_shutdown.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_222 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -1414,7 +1414,7 @@ Start-Sleep -Seconds 2
 # Possible Values: No one should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.21
-$infPath_221 = "C:\Users\test\cis_2_2_21_delegation.inf"
+$infPath_221 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_21_delegation.inf"
 $infContent_221 = @"
 [Unicode]
 Unicode=yes
@@ -1432,8 +1432,8 @@ Set-Content -Path $infPath_221 -Value $infContent_221 -Encoding UTF8
 Write-Host "CIS 2.2.21 INF file created: $infPath_221"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_221 = "C:\Users\test\cis_2_2_21_delegation.log"
-#$seceditDBPath_221 = "C:\Users\test\cis_2_2_21_delegation.sdb"
+$seceditLogPath_221 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_21_delegation.log"
+#$seceditDBPath_221 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_21_delegation.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_221 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -1494,7 +1494,7 @@ Start-Sleep -Seconds 2
 # Possible Values: Only Administrators should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.15
-$infPath_215 = "C:\Users\test\cis_2_2_15_debug.inf"
+$infPath_215 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_15_debug.inf"
 $infContent_215 = @"
 [Unicode]
 Unicode=yes
@@ -1512,8 +1512,8 @@ Set-Content -Path $infPath_215 -Value $infContent_215 -Encoding UTF8
 Write-Host "CIS 2.2.15 INF file created: $infPath_215"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_215 = "C:\Users\test\cis_2_2_15_debug.log"
-#$seceditDBPath_215 = "C:\Users\test\cis_2_2_15_debug.sdb"
+$seceditLogPath_215 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_15_debug.log"
+#$seceditDBPath_215 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_15_debug.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_215 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -1573,7 +1573,7 @@ Start-Sleep -Seconds 2
 # Possible Values: Only Administrators should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.14
-$infPath_214 = "C:\Users\test\cis_2_2_14_symlink.inf"
+$infPath_214 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_14_symlink.inf"
 $infContent_214 = @"
 [Unicode]
 Unicode=yes
@@ -1591,8 +1591,8 @@ Set-Content -Path $infPath_214 -Value $infContent_214 -Encoding UTF8
 Write-Host "CIS 2.2.14 INF file created: $infPath_214"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_214 = "C:\Users\test\cis_2_2_14_symlink.log"
-#$seceditDBPath_214 = "C:\Users\test\cis_2_2_14_symlink.sdb"
+$seceditLogPath_214 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_14_symlink.log"
+#$seceditDBPath_214 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_14_symlink.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_214 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -1652,7 +1652,7 @@ Start-Sleep -Seconds 2
 # Possible Values: No one should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.13
-$infPath_213 = "C:\Users\test\cis_2_2_13_sharedobj.inf"
+$infPath_213 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_13_sharedobj.inf"
 $infContent_213 = @"
 [Unicode]
 Unicode=yes
@@ -1670,8 +1670,8 @@ Set-Content -Path $infPath_213 -Value $infContent_213 -Encoding UTF8
 Write-Host "CIS 2.2.13 INF file created: $infPath_213"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_213 = "C:\Users\test\cis_2_2_13_sharedobj.log"
-#$seceditDBPath_213 = "C:\Users\test\cis_2_2_13_sharedobj.sdb"
+$seceditLogPath_213 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_13_sharedobj.log"
+#$seceditDBPath_213 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_13_sharedobj.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_213 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -1732,7 +1732,7 @@ Start-Sleep -Seconds 2
 # Possible Values: The above groups should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.12
-$infPath_212 = "C:\Users\test\cis_2_2_12_globalobjects.inf"
+$infPath_212 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_12_globalobjects.inf"
 $infContent_212 = @"
 [Unicode]
 Unicode=yes
@@ -1750,8 +1750,8 @@ Set-Content -Path $infPath_212 -Value $infContent_212 -Encoding UTF8
 Write-Host "CIS 2.2.12 INF file created: $infPath_212"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_212 = "C:\Users\test\cis_2_2_12_globalobjects.log"
-#$seceditDBPath_212 = "C:\Users\test\cis_2_2_12_globalobjects.sdb"
+$seceditLogPath_212 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_12_globalobjects.log"
+#$seceditDBPath_212 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_12_globalobjects.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_212 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -1811,7 +1811,7 @@ Start-Sleep -Seconds 2
 # Possible Values: No one should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.11
-$infPath_211 = "C:\Users\test\cis_2_2_11_token.inf"
+$infPath_211 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_11_token.inf"
 $infContent_211 = @"
 [Unicode]
 Unicode=yes
@@ -1829,8 +1829,8 @@ Set-Content -Path $infPath_211 -Value $infContent_211 -Encoding UTF8
 Write-Host "CIS 2.2.11 INF file created: $infPath_211"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_211 = "C:\Users\test\cis_2_2_11_token.log"
-#$seceditDBPath_211 = "C:\Users\test\cis_2_2_11_token.sdb"
+$seceditLogPath_211 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_11_token.log"
+#$seceditDBPath_211 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_11_token.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_211 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -1890,7 +1890,7 @@ Start-Sleep -Seconds 2
 # Possible Values: Administrators should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.10
-$infPath_210 = "C:\Users\test\cis_2_2_10_pagefile.inf"
+$infPath_210 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_10_pagefile.inf"
 $infContent_210 = @"
 [Unicode]
 Unicode=yes
@@ -1908,8 +1908,8 @@ Set-Content -Path $infPath_210 -Value $infContent_210 -Encoding UTF8
 Write-Host "CIS 2.2.10 INF file created: $infPath_210"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_210 = "C:\Users\test\cis_2_2_10_pagefile.log"
-#$seceditDBPath_210 = "C:\Users\test\cis_2_2_10_pagefile.sdb"
+$seceditLogPath_210 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_10_pagefile.log"
+#$seceditDBPath_210 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_10_pagefile.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_210 = "C:\Windows\Security\Database\secedit.sdb"
 
@@ -1969,7 +1969,7 @@ Start-Sleep -Seconds 2
 # Possible Values: No one should have this privilege.
 
 # Sätt sökvägen för den temporära INF-filen och skapa dess innehåll för CIS Control 2.2.1
-$infPath_201 = "C:\Users\test\cis_2_2_1_credman.inf"
+$infPath_201 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_1_credman.inf"
 $infContent_201 = @"
 [Unicode]
 Unicode=yes
@@ -1987,8 +1987,8 @@ Set-Content -Path $infPath_201 -Value $infContent_201 -Encoding UTF8
 Write-Host "CIS 2.2.1 INF file created: $infPath_201"
 
 # Skapa loggfil och databasfilvägar för secedit
-$seceditLogPath_201 = "C:\Users\test\cis_2_2_1_credman.log"
-#$seceditDBPath_201 = "C:\Users\test\cis_2_2_1_credman.sdb"
+$seceditLogPath_201 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_1_credman.log"
+#$seceditDBPath_201 = Join-Path -Path $env:USERPROFILE -ChildPath "cis_2_2_1_credman.sdb"
 # Använd den centrala SDB-filen
 $seceditDBPath_201 = "C:\Windows\Security\Database\secedit.sdb"
 
