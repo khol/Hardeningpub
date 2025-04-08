@@ -23,13 +23,15 @@ $AppsToRemove = @(
     "*DevHome*",
     "*Disney*",
     "*Dolby*",
+    "*Booking.com*",
+    "*Instagram*",
     "*Duolingo-LearnLanguagesforFree*",
-    "*EclipseManager*",
     "*Facebook*",
     "*Flipboard*",
     "*gaming*",
     "*Minecraft*",
     "*PandoraMediaInc*",
+    "*PowerToys*",
     "*Royal Revolt*",
     "*Speed Test*",
     "*Spotify*",
@@ -39,11 +41,12 @@ $AppsToRemove = @(
     "*HPPrinterControl*",
     "*AppUp.IntelGraphicsExperience*",
     "*DropboxOEM*",
-    "*Disney*",
+    "*TikTok*",
     "*DolbyLaboratories.DolbyAccess*",
     "*DolbyLaboratories.DolbyAudio*",
     "*E0469640.SmartAppearance*",
     "*Microsoft.549981C3F5F10*",
+    "*Microsoft.Advertising.Xaml*",
     "*Microsoft.AV1VideoExtension*",
     "*Microsoft.BingNews*",
     "*Microsoft.BingSearch*",
@@ -67,9 +70,11 @@ $AppsToRemove = @(
     "*Microsoft.PowerAutomateDesktop*",
     "*Microsoft.PowerAutomateDesktopCopilotPlugin*",
     "*Microsoft.Print3D*",
+    "*Microsoft.RawImageExtension*",
     "*Microsoft.SkypeApp*",
-    "*Microsoft.StorePurchaseApp*",
     "*Microsoft.SysinternalsSuite*",
+    "*WindowsSubsystemForAndroid*",
+    "*WindowsSubsystemForLinux*",
     "*Microsoft.Teams*",
     "*Microsoft.Todos*",
     "*Microsoft.Whiteboard*",
@@ -123,15 +128,11 @@ $AppsToRemove = @(
     "*Microsoft.3DBuilder*",
     "*Microsoft.BingNews*",
     "*Microsoft.BingTranslator*",
-    "*Microsoft.BingWeather*",
     "*Microsoft.FreshPaint*",
-    "*Microsoft.Getstarted*",
-    "*Microsoft.Messaging*",
     "*Microsoft.MicrosoftOfficeHub*",
     "*Microsoft.MicrosoftSolitaireCollection*",
     "*Microsoft.NetworkSpeedTest*",
     "*Microsoft.Office.OneNote*",
-    "*Microsoft.People*",
     "*Microsoft.SkypeApp*",
     "*Microsoft.WindowsAlarms*",
     "*Microsoft.WindowsFeedbackHub*",
@@ -149,7 +150,9 @@ $AppsToRemove = @(
 )
 
 foreach ($App in $AppsToRemove) {
-    if ($App -like "*`**") { # Check for wildcard
+    #if ($App -like "*`**") { # Check for wildcard
+    if ($App -like "*`**" -or $App -like "*?*") { # Check for wildcard
+
         $AppxPackages = Get-AppxPackage -AllUsers | Where-Object {$_.Name -Like $App}
         $ProvisionedPackages = Get-AppxProvisionedPackage -Online | Where-Object {$_.PackageName -Like $App}
 
@@ -165,6 +168,16 @@ foreach ($App in $AppsToRemove) {
                     # Remove registry entries (example)
                     Remove-Item -Path "HKCU:\Software\$($Package.Name)" -Recurse -Force -ErrorAction SilentlyContinue
                     Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$($Package.Name)" -Recurse -Force -ErrorAction SilentlyContinue
+
+                    # 🔽 Lägg till AppData-rensning här:
+                    $paths = @("$env:LOCALAPPDATA\$($Package.Name)", "$env:APPDATA\$($Package.Name)")
+                    foreach ($path in $paths) {
+                        if (Test-Path $path) {
+                            Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
+                            Write-Host "Removed AppData for $($Package.Name): $path" -ForegroundColor DarkCyan
+                        }
+                    }
+
 
                 } catch {
                     Write-Host "Failed to remove AppxPackage $($Package.Name): $_" -ForegroundColor Red
