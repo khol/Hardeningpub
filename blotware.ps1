@@ -1,3 +1,5 @@
+#look at https://github.com/builtbybel/Bloatynosy/tree/main
+
 $AppsToRemove = @(
     "*Cortana*",
     "*CompanyPortal*",
